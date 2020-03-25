@@ -86,14 +86,15 @@ jobs:
 
       - name: misc install
         shell: cmd
+        # openssl dir defined in MSP-Greg/setup-ruby-pkgs@master
         run: |
           del ruby-mswin\lib\x64-vcruntime140-ruby280-static.lib
           mkdir ruby-mswin\bin\ruby_builtin_dlls
-          copy C:\vcpkg\installed\x64-windows\bin\readline.dll            %cd%\ruby-mswin\bin\ruby_builtin_dlls\
-          copy "C:\Program Files\OpenSSL-Win64\bin\libcrypto-1_1-x64.dll" %cd%\ruby-mswin\bin\ruby_builtin_dlls\
-          copy "C:\Program Files\OpenSSL-Win64\bin\libssl-1_1-x64.dll"    %cd%\ruby-mswin\bin\ruby_builtin_dlls\
-          copy %cd%\mswin\ruby_builtin_dlls.manifest                      %cd%\ruby-mswin\bin\ruby_builtin_dlls\
-          move %cd%\ruby-mswin\bin\zlib1.dll                              %cd%\ruby-mswin\bin\ruby_builtin_dlls\zlib1.dll
+          copy C:\vcpkg\installed\x64-windows\bin\readline.dll %cd%\ruby-mswin\bin\ruby_builtin_dlls\
+          copy "C:\openssl-win\bin\libcrypto-1_1-x64.dll"      %cd%\ruby-mswin\bin\ruby_builtin_dlls\
+          copy "C:\openssl-win\bin\libssl-1_1-x64.dll"         %cd%\ruby-mswin\bin\ruby_builtin_dlls\
+          copy %cd%\mswin\ruby_builtin_dlls.manifest           %cd%\ruby-mswin\bin\ruby_builtin_dlls\
+          move %cd%\ruby-mswin\bin\zlib1.dll                   %cd%\ruby-mswin\bin\ruby_builtin_dlls\zlib1.dll
           cd ruby-mswin\bin
           mt.exe -manifest ..\..\mswin\ruby-exe.xml  -outputresource:ruby.exe;1
           mt.exe -manifest ..\..\mswin\ruby-exe.xml  -outputresource:rubyw.exe;1

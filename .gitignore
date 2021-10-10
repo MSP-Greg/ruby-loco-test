@@ -1,0 +1,17 @@
+/build/
+/git
+/install/
+/ruby-mingw/
+/ruby-ucrt/
+/ruby
+/rubyinstaller2
+/ruby_readline
+/zips
+.downloaded-cache/
+
+*.txt
+*.log
+*.7z
+
+local.ps1
+/z_testing.rb

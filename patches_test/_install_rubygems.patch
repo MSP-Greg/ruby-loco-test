@@ -1,0 +1,48 @@
+diff --git a/test/rubygems/test_gem.rb b/test/rubygems/test_gem.rb
+index da6fdc54fa..4de31660ab 100644
+--- a/test/rubygems/test_gem.rb
++++ b/test/rubygems/test_gem.rb
+@@ -989,7 +989,7 @@ def test_self_platforms
+   end
+ 
+   def test_self_prefix
+-    assert_equal PROJECT_DIR, Gem.prefix
++    assert_nil Gem.prefix
+   end
+ 
+   def test_self_prefix_libdir
+diff --git a/test/rubygems/test_gem_commands_environment_command.rb b/test/rubygems/test_gem_commands_environment_command.rb
+index 2bf80d8d85..767c5eed59 100644
+--- a/test/rubygems/test_gem_commands_environment_command.rb
++++ b/test/rubygems/test_gem_commands_environment_command.rb
+@@ -25,7 +25,11 @@ def test_execute
+     assert_match %r{RUBY VERSION: \d+\.\d+\.\d+ \(.*\) \[.*\]}, @ui.output
+     assert_match %r{INSTALLATION DIRECTORY: #{Regexp.escape @gemhome}},
+                  @ui.output
+-    assert_match %r{RUBYGEMS PREFIX: }, @ui.output
++    if Gem.prefix.nil?
++      refute_match %r{RUBYGEMS PREFIX: }, @ui.output
++    else
++      assert_match %r{RUBYGEMS PREFIX: }, @ui.output
++    end
+     assert_match %r{RUBY EXECUTABLE:.*#{RbConfig::CONFIG['ruby_install_name']}},
+                  @ui.output
+     assert_match %r{GIT EXECUTABLE: #{@cmd.send(:git_path)}}, @ui.output
+diff --git a/test/rubygems/test_gem_commands_update_command.rb b/test/rubygems/test_gem_commands_update_command.rb
+index e9264f6d14..86b7bb69c7 100644
+--- a/test/rubygems/test_gem_commands_update_command.rb
++++ b/test/rubygems/test_gem_commands_update_command.rb
+@@ -639,8 +639,11 @@ def test_update_rubygems_arguments
+ 
+     arguments = @cmd.update_rubygems_arguments
+ 
+-    assert_equal '--prefix',           arguments.shift
+-    assert_equal Gem.prefix,           arguments.shift
++    # asserts fail from install folder
++    if Gem.method(:host).source_location[0].start_with? "#{File.expand_path '../../..', __FILE__}/"
++      assert_equal '--prefix',           arguments.shift
++      assert_equal Gem.prefix,           arguments.shift
++    end
+     assert_equal '--no-document',      arguments.shift
+     assert_equal '--previous-version', arguments.shift
+     assert_equal Gem::VERSION,         arguments.shift

@@ -1,0 +1,69 @@
+name: mingw
+on:
+  push:
+    branches:
+      - '*'
+  schedule:
+    - cron: '45 2,8,15 * * *'
+  workflow_dispatch:
+
+jobs:
+  mingw:
+    strategy:
+      fail-fast: false
+    runs-on: windows-2019
+
+    steps:
+      - name: Cache - .downloaded-cache
+        uses: actions/cache@v2
+        with:
+          path: .downloaded-cache
+          key: dl-cache-win-mingw-${{ env.GITHUB_RUN_ID }}
+          restore-keys: dl-cache-win-mingw-
+
+      - name: git config & clone
+        run: |
+          git config --system core.autocrlf false
+          git config --system core.eol lf
+
+      - name: Checkout ruby-loco
+        uses: actions/checkout@v2
+
+      - name: get ruby and rubyinstaller2
+        run: |
+          $gh = 'https://github.com'
+          git clone -q --depth=1 --no-tags --branch=master  $gh/oneclick/rubyinstaller2.git ./rubyinstaller2
+          git clone -q --depth=1 --no-tags --branch=master  $gh/ruby/ruby.git               ./ruby
+
+      - name: Set up Ruby & MSYS2
+        uses: MSP-Greg/setup-ruby-pkgs@win-ucrt-1
+        with:
+          ruby-version: mingw
+          mingw: _upgrade_ gmp libffi openssl ragel readline
+          msys2: automake1.16 bison
+          setup-ruby-ref: ruby/setup-ruby/pr/224
+
+      - name: build & install
+        timeout-minutes: 30
+        run:  ./1_0_build_install_64.ps1
+
+      - name: test
+        timeout-minutes: 40
+        run:  ./2_0_test.ps1
+        env:
+          APPVEYOR: 'True'
+
+      - name: upload asset
+        timeout-minutes: 5
+        uses: ./.github/actions/upload-binary
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          ruby_path: ./ruby-mingw
+
+      - name: save log artifact
+        if: success() || failure()
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ env.TEST_LOGS }}
+          path: ./logs

@@ -1,0 +1,33 @@
+diff --git a/lib/rbreadline.rb b/lib/rbreadline.rb
+index e27e80b..8af63b7 100644
+--- a/lib/rbreadline.rb
++++ b/lib/rbreadline.rb
+@@ -10,10 +10,6 @@
+ 
+ require "rbreadline/version"
+ 
+-class Integer
+-  def ord; self; end
+-end
+-
+ module RbReadline
+   require 'etc'
+ 
+@@ -3482,7 +3478,7 @@ module RbReadline
+         if (!@rl_byte_oriented)
+           _rl_wrapped_multicolumn = 0
+           if (@_rl_screenwidth < lpos + wc_width)
+-            for i in lpos ... @_rl_screenwidth
++            (lpos...@_rl_screenwidth).each do |_|
+               # The space will be removed in update_line()
+               line[out,1] = ' '
+               out += 1
+@@ -3501,7 +3497,7 @@ module RbReadline
+           end
+           line[out,wc_bytes] = @rl_line_buffer[_in,wc_bytes]
+           out += wc_bytes
+-          for i in 0 ... wc_width
++          (0...wc_width).each do |_|
+             lpos+=1
+             if (lpos >= @_rl_screenwidth)
+               @inv_lbreaks[newlines+=1] = out

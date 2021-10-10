@@ -2,7 +2,10 @@ name: mswin
 on:
   push:
     branches:
-      - 'master'
+      - '*'
+  schedule:
+    - cron: '46 2,8,15 * * *'
+  workflow_dispatch:
 
 jobs:
   mswin:
@@ -16,28 +19,22 @@ jobs:
 
     steps:
       - name: Cache - .downloaded-cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: .downloaded-cache
-          key: dl-cache-win-${{ matrix.vs }}-${{ github.sha }}
-          restore-keys: |
-            dl-cache-win-${{ matrix.vs }}-
+          key: dl-cache-win-mswin-${{ env.GITHUB_RUN_ID }}
 
       - name: Cache - chocolatey
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: chocolatey-${{ matrix.vs }}-${{ github.sha }}
-          restore-keys: |
-            chocolatey-${{ matrix.vs }}-
+          key: chocolatey-${{ matrix.vs }}
 
       - name: Cache - vcpkg-download
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: C:\vcpkg\downloads
-          key: vcpkg-download-${{ matrix.vs }}-${{ github.sha }}
-          restore-keys: |
-            vcpkg-download-${{ matrix.vs }}-
+          key: vcpkg-download-${{ matrix.vs }}
 
       - name: git config
         run: |
@@ -49,12 +46,8 @@ jobs:
 
       - name: Checkout ruby
         run: |
-          git clone --single-branch --shallow-since=yesterday --branch=master https://github.com/ruby/ruby src
-
-      - name: actions-commit-info.sh
-        run: ./src/tool/actions-commit-info.sh
-        shell: bash
-        id: commit_info
+          $gh = 'https://github.com'
+          git clone -q --depth=1 --no-tags --branch=master $gh/ruby/ruby.git src
 
       - name: load ruby
         uses: MSP-Greg/setup-ruby-pkgs@v1
@@ -75,34 +68,46 @@ jobs:
           cd build
           ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --enable-bundled-libffi %OPT_DIR:\=/% %SSL_DIR:\=/%
 
+      - name: unicode to http
+        run: |
+          cd src
+          patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/unicode-to-http.patch
+
       - name: download unicode, extlibs, zlib
         run: |
+          # copy current cert file to mswin location
+          curl -fsSL -o ruby-mingw.7z --retry 10 https://github.com/MSP-Greg/ruby-loco/releases/download/ruby-master/ruby-mingw.7z
+          7z e ruby-mingw.7z -ossl ruby-mingw/ssl/cert.pem
+          Copy-Item ./ssl/cert.pem "C:/Program Files/Common Files/SSL/cert.pem"
           $zlib = 'zlib1211.zip'
           curl -fsSL -o $zlib --retry 10 https://zlib.net/$zlib
           &'C:\Program Files\7-Zip\7z.exe' x -osrc/ext/zlib $zlib
           cd build
+          # libffi is causing error
           nmake extract-extlibs
-          nmake update-unicode
+          # nmake update-unicode
 
       - name: apply patches
         run: |
           cd src
           patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/test-all.patch
+          patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/test-all_open_port.patch
 
       - name: nmake
+        timeout-minutes: 20
         run:  |
           cd build
           nmake
 
-      - name: mmake install
+      - name: nmake install
         run: |
           cd build
           nmake "DESTDIR=" install-nodoc
 
-      - name: misc install
+      - name: misc install, ruby -v
         run: |
           $repo = $pwd
-          del ruby-mswin\lib\x64-vcruntime140-ruby280-static.lib
+          del ruby-mswin\lib\x64-vcruntime140-ruby310-static.lib
           mkdir ruby-mswin\bin\ruby_builtin_dlls 2>&1>$null
           cd ruby-mswin\bin\ruby_builtin_dlls
           Copy-Item C:\vcpkg\installed\x64-windows\bin\readline.dll
@@ -113,6 +118,8 @@ jobs:
           cd ..
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1
+          cd $repo
+          ruby-mswin\bin\ruby.exe -v mswin\copy_bash_scripts.rb
 
       - name: nmake test
         timeout-minutes: 4
@@ -120,18 +127,20 @@ jobs:
         run: |
           cd build
           set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
+          set BUNDLER_VERSION=
           nmake test
 
       # copy dll files to bin folder, add bin to path
       # ruby/test_time_tz.rb requires additional gems
       - name: nmake test-all -j
-        timeout-minutes: 35
+        timeout-minutes: 30
         shell: cmd
         run: |
           set /a JOBS=%NUMBER_OF_PROCESSORS%
           set EXCL_N=--exclude test_jit --exclude test_syntax --exclude test_time_tz --exclude test_undef
           chcp 437
           set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
+          set BUNDLER_VERSION=
           cd build
           nmake test-all "TESTOPTS=-j%JOBS% %EXCL_N% -v --timeout-scale=3.0 --retry --job-status=normal --show-skip"
 
@@ -143,6 +152,7 @@ jobs:
           set TESTS=%tr%/test_jit.rb %tr%/test_syntax.rb %tr%/test_time_tz.rb %tr%/test_undef.rb
           chcp 437
           set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
+          set BUNDLER_VERSION=
           cd build
           nmake test-all "TESTOPTS=-v --timeout-scale=3.0"
 
@@ -152,9 +162,9 @@ jobs:
         run: |
           chcp 437
           set PATH=%cd%\ruby-mswin\bin;%PATH%
-          set SPEC_TEMP_DIR=%TMPDIR%/rubyspec_temp
+          set BUNDLER_VERSION=
           cd src/spec/ruby
-          ruby ../mspec/bin/mspec -j
+          ruby ../mspec/bin/mspec -j -I../../tool/lib
 
       - name: CLI Check
         run: ./mswin/cli_test.ps1

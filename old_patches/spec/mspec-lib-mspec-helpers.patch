@@ -1,0 +1,18 @@
+Patch by MSP-Greg
+On Windows, put temp folders in windows temp folder
+diff --git a/spec/mspec/lib/mspec/helpers/tmp.rb b/spec/mspec/lib/mspec/helpers/tmp.rb
+index df242f73c1..7b2e155e46 100644
+--- a/spec/mspec/lib/mspec/helpers/tmp.rb
++++ b/spec/mspec/lib/mspec/helpers/tmp.rb
+@@ -8,7 +8,10 @@
+ if tmpdir = ENV['SPEC_TEMP_DIR']
+   temppath = File.realdirpath(tmpdir) + "/"
+ else
+-  tmpdir = File.realdirpath("rubyspec_temp")
++  env_tmp = ENV['TMPDIR']
++  tmpdir = ( env_tmp && Dir.exist?(env_tmp)) ?
++    File.realdirpath('rubyspec_temp', env_tmp) :
++    File.realdirpath('rubyspec_temp')
+   temppath = tmpdir + "/#{SPEC_TEMP_DIR_PID}"
+   SPEC_TEMP_DIR_LIST << tmpdir
+ end

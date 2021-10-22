@@ -3,12 +3,10 @@ on:
   push:
     branches:
       - '*'
-  schedule:
-    - cron: '55 2,8,15 * * *'
   workflow_dispatch:
 
 jobs:
-  mingw:
+  ucrt:
     strategy:
       fail-fast: false
     runs-on: windows-2019

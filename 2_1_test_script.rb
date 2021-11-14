@@ -8,11 +8,11 @@
 module TestScript
   case ENV['MSYSTEM']
   when 'UCRT64'
-    D_INSTALL = File.join __dir__, 'ruby_ucrt'
+    D_INSTALL = File.join __dir__, 'ruby-ucrt'
   when 'MINGW32'
-    D_INSTALL = File.join __dir__, 'ruby_mingw32'
+    D_INSTALL = File.join __dir__, 'ruby-mingw32'
   else
-    D_INSTALL = File.join __dir__, 'ruby_mingw'
+    D_INSTALL = File.join __dir__, 'ruby-mingw'
   end
 
   @@cli_fails = 0
@@ -255,7 +255,7 @@ module TestScript
   def errors_faults_parallel(log, type, abbrev)
     str = ''.dup
     faults = []
-    faults = log.scan(/^( *\d+ )([A-Z][^#\n]+#test_[^\n]+? = #{abbrev})/)
+    faults = log.scan(/^([A-Z][^#\n]+#test_[^\n]+? = #{abbrev})/)
     unless  faults.empty?
       t1 = faults.length
       msg = t1 == 1 ? "#{type}" : "#{type}s"
@@ -339,7 +339,7 @@ module TestScript
     end
     if IS_ACTIONS
       run_no = ENV['GITHUB_RUN_NUMBER'].rjust 4, '0'
-      desc = "#{R_BRANCH}_#{date}_#{run_no}_#{RUBY_REVISION[0,10]}_#{RbConfig::CONFIG['build_os'][/[a-z]+/]}"
+      desc = "#{R_BRANCH}_#{date}_#{run_no}_#{RUBY_REVISION[0,10]}_#{D_INSTALL[/[^-]+\z/]}"
       File.write ENV['GITHUB_ENV'], "TEST_LOGS=#{desc}\n", mode: 'ab:UTF-8'
       puts "log name is #{desc}"
     end

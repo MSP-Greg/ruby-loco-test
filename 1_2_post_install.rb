@@ -41,7 +41,7 @@ class << self
   # Copies correct dll files from MSYS2 location to package dir.
   def copy_dll_files
     pkg_pre = ENV['MINGW_PACKAGE_PREFIX']
-    pkgs = 'dlfcn gcc-libs gdbm libffi libyaml openssl readline'
+    pkgs = 'dlfcn gcc-libs libffi libyaml openssl readline'
     dll_files, lib_files = find_dlls pkgs, pkg_pre
 
     # get mingw bin path for arch

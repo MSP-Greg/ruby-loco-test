@@ -9,17 +9,10 @@ jobs:
   ucrt:
     strategy:
       fail-fast: false
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     steps:
-      - name: Cache - .downloaded-cache
-        uses: actions/cache@v2
-        with:
-          path: .downloaded-cache
-          key: dl-cache-win-ucrt-${{ env.GITHUB_RUN_ID }}
-          restore-keys: dl-cache-win-ucrt-
-
-      - name: git config & clone
+      - name: git config
         run: |
           git config --system core.autocrlf false
           git config --system core.eol lf
@@ -33,20 +26,24 @@ jobs:
           git clone -q --depth=1 --no-tags --branch=master  $gh/oneclick/rubyinstaller2.git ./rubyinstaller2
           git clone -q --depth=1 --no-tags --branch=master  $gh/ruby/ruby.git               ./ruby
 
-      - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/setup-ruby-pkgs@win-ucrt-1
+      - name: Cache - .downloaded-cache
+        uses: actions/cache@v2
         with:
-          ruby-version: head
-          mingw: _upgrade_ gmp libffi openssl ragel readline
-          msys2: automake1.16 bison
-          setup-ruby-ref: MSP-Greg/ruby-setup-ruby/win-ucrt-1
+          path: .downloaded-cache
+          key: dl-cache-win-ucrt-${{ hashFiles('ruby/gems/bundled_gems') }}
+          restore-keys: dl-cache-win-ucrt-
+
+      - name: Set up Ruby & MSYS2
+        uses: MSP-Greg/ruby-setup-ruby@win-ucrt-2
+        with:
+          ruby-version: ucrt
 
       - name: build & install
         timeout-minutes: 30
         run:  ./1_0_build_install_64.ps1
 
       - name: test
-        timeout-minutes: 40
+        timeout-minutes: 45
         run:  ./2_0_test.ps1
         env:
           APPVEYOR: 'True'

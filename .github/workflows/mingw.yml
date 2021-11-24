@@ -34,7 +34,7 @@ jobs:
           restore-keys: dl-cache-win-mingw-
 
       - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/ruby-setup-ruby@win-ucrt-2
+        uses: MSP-Greg/ruby-setup-ruby@win-ucrt-1
         with:
           ruby-version: mingw
 

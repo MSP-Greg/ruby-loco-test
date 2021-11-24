@@ -1,0 +1,13 @@
+diff --git a/win32/setup.mak b/win32/setup.mak
+index 5294a49ee9..4f7decfd11 100644
+--- a/win32/setup.mak
++++ b/win32/setup.mak
+@@ -159,7 +159,7 @@ echo RUBY_DEVEL = yes
+ set /a MSC_VER = _MSC_VER
+ #if _MSC_VER > 1900
+ set /a MSC_VER_LOWER = MSC_VER/10*10+0
+-set /a MSC_VER_UPPER = MSC_VER/10*10+9
++set /a MSC_VER_UPPER = MSC_VER/10*10+19
+ #endif
+ set MSC_VER
+ del %0 & exit

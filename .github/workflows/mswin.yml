@@ -11,7 +11,7 @@ jobs:
       matrix:
         vs: [2019]
       fail-fast: false
-    runs-on: windows-2022
+    runs-on: windows-2019
     env:
       APPVEYOR: 'True'
 
@@ -41,27 +41,20 @@ jobs:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
           key: chocolatey-${{ matrix.vs }}
 
-      - name: Cache - vcpkg-download
+      - name: Cache - vcpkg-installed
         uses: actions/cache@v2
         with:
-          path: C:\vcpkg\downloads
-          key: vcpkg-download-${{ matrix.vs }}
+          path: C:\vcpkg\installed
+          key: vcpkg2-download-${{ matrix.vs }}-${{ hashFiles('C:/vcpkg/installed/vcpkg/info') }}
+          restore-keys: vcpkg2-download-${{ matrix.vs }}
 
       - name: load ruby
-        uses: MSP-Greg/setup-ruby-pkgs@win-ucrt-2
+        timeout-minutes: 10
+        uses: MSP-Greg/setup-ruby-pkgs@v1
         with:
           ruby-version: mswin
           mswin: bison
-          choco: openssl
-          vcpkg: readline
-          setup-ruby-ref: MSP-Greg/ruby-setup-ruby/win-ucrt-1
-
-      - name: apply patches
-        run: |
-          cd src
-          patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/test-all.patch
-          patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/test-all_open_port.patch
-          patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/MSC_VER.patch
+          vcpkg: openssl readline
 
       - name: Configure
         shell: cmd
@@ -72,7 +65,7 @@ jobs:
           set PRE=%cd%\ruby-mswin
           mkdir build
           cd build
-          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --enable-bundled-libffi %OPT_DIR:\=/% %SSL_DIR:\=/%
+          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --enable-bundled-libffi %OPT_DIR:\=/%
 
       - name: unicode to http
         run: |
@@ -83,7 +76,7 @@ jobs:
         run: |
           # copy current cert file to mswin location
           curl -fsSL -o ruby-mingw.7z --retry 10 https://github.com/MSP-Greg/ruby-loco/releases/download/ruby-master/ruby-mingw.7z
-          &"C:\Program Files\7-Zip\7z.exe" e ruby-mingw.7z -ossl ruby-mingw/ssl/cert.pem
+          7z e ruby-mingw.7z -ossl ruby-mingw/ssl/cert.pem
           Copy-Item ./ssl/cert.pem "C:/Program Files/Common Files/SSL/cert.pem"
           $zlib = 'zlib1211.zip'
           curl -fsSL -o $zlib --retry 10 https://zlib.net/$zlib
@@ -92,6 +85,12 @@ jobs:
           # libffi is causing error
           nmake extract-extlibs
           # nmake update-unicode
+
+      - name: apply patches
+        run: |
+          cd src
+          patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/test-all.patch
+          patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/test-all_open_port.patch
 
       - name: nmake
         timeout-minutes: 20
@@ -107,12 +106,12 @@ jobs:
       - name: misc install, ruby -v
         run: |
           $repo = $pwd
-          del ruby-mswin\lib\x64-vcruntime140-ruby310-static.lib
+          del ruby-mswin\lib\x64-vcruntime140-ruby320-static.lib
           mkdir ruby-mswin\bin\ruby_builtin_dlls 2>&1>$null
           cd ruby-mswin\bin\ruby_builtin_dlls
           Copy-Item C:\vcpkg\installed\x64-windows\bin\readline.dll
-          Copy-Item C:\openssl-win\bin\libcrypto-1_1-x64.dll
-          Copy-Item C:\openssl-win\bin\libssl-1_1-x64.dll
+          Copy-Item C:\vcpkg\installed\x64-windows\bin\libcrypto-1_1-x64.dll
+          Copy-Item C:\vcpkg\installed\x64-windows\bin\libssl-1_1-x64.dll
           Copy-Item $repo\mswin\ruby_builtin_dlls.manifest
           Move-Item -Path ..\zlib1.dll
           cd ..

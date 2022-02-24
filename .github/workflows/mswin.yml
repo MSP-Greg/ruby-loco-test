@@ -36,8 +36,7 @@ jobs:
           path: |
             C:\vcpkg\downloads
             C:\vcpkg\installed
-          key: vcpkg-${{ matrix.vs }}-${{ hashFiles('C:/vcpkg/downloads') }}
-          restore-keys: vcpkg-${{ matrix.vs }}-
+          key: vcpkg-${{ matrix.vs }}
 
       - name: Cache - .downloaded-cache
         uses: actions/cache@v2
@@ -62,7 +61,7 @@ jobs:
           set PRE=%cd%\ruby-mswin
           mkdir build
           cd build
-          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --enable-bundled-libffi %OPT_DIR:\=/% %SSL_DIR:\=/%
+          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
 
       - name: unicode to http
         run: |

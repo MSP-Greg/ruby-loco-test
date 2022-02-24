@@ -28,25 +28,23 @@ jobs:
         run: |
           $gh = 'https://github.com'
           git clone -q --depth=1 --no-tags --branch=master $gh/ruby/ruby.git src
+          mkdir .downloaded-cache
+
+      - name: Cache - vcpkg-download
+        uses: actions/cache@v2
+        with:
+          path: |
+            C:\vcpkg\downloads
+            C:\vcpkg\installed
+          key: vcpkg-${{ matrix.vs }}-${{ hashFiles('C:/vcpkg/downloads') }}
+          restore-keys: vcpkg-${{ matrix.vs }}-
 
       - name: Cache - .downloaded-cache
         uses: actions/cache@v2
         with:
           path: .downloaded-cache
-          key: dl-cache-win-mswin-${{ hashFiles('src/gems/bundled_gems') }}
-
-      - name: Cache - chocolatey
-        uses: actions/cache@v2
-        with:
-          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: chocolatey-${{ matrix.vs }}
-
-      - name: Cache - vcpkg-installed
-        uses: actions/cache@v2
-        with:
-          path: C:\vcpkg\installed
-          key: vcpkg2-download-${{ matrix.vs }}-${{ hashFiles('C:/vcpkg/installed/vcpkg/info') }}
-          restore-keys: vcpkg2-download-${{ matrix.vs }}
+          key: dl-cache-win-mswin-${{ matrix.vs }}-${{ hashFiles('src/gems/bundled_gems') }}
+          restore-keys: dl-cache-win-mswin-${{ matrix.vs }}-
 
       - name: load ruby
         timeout-minutes: 10
@@ -59,13 +57,12 @@ jobs:
       - name: Configure
         shell: cmd
         run: |
-          mkdir .downloaded-cache
           mklink /j %cd%\src\.downloaded-cache %cd%\.downloaded-cache
           mkdir install
           set PRE=%cd%\ruby-mswin
           mkdir build
           cd build
-          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --enable-bundled-libffi %OPT_DIR:\=/%
+          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --enable-bundled-libffi %OPT_DIR:\=/% %SSL_DIR:\=/%
 
       - name: unicode to http
         run: |
@@ -110,8 +107,8 @@ jobs:
           mkdir ruby-mswin\bin\ruby_builtin_dlls 2>&1>$null
           cd ruby-mswin\bin\ruby_builtin_dlls
           Copy-Item C:\vcpkg\installed\x64-windows\bin\readline.dll
-          Copy-Item C:\vcpkg\installed\x64-windows\bin\libcrypto-1_1-x64.dll
-          Copy-Item C:\vcpkg\installed\x64-windows\bin\libssl-1_1-x64.dll
+          Copy-Item "C:\vcpkg\installed\x64-windows\bin\libcrypto-1_1-x64.dll"
+          Copy-Item "C:\vcpkg\installed\x64-windows\bin\libssl-1_1-x64.dll"
           Copy-Item $repo\mswin\ruby_builtin_dlls.manifest
           Move-Item -Path ..\zlib1.dll
           cd ..
@@ -184,3 +181,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           ruby_path: ./ruby-mswin
+
+      - name: delete msys2 tar so caches work
+        run: del C:\msys64\usr\bin\tar.exe

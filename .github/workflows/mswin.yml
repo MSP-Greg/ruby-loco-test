@@ -46,7 +46,7 @@ jobs:
           restore-keys: dl-cache-win-mswin-${{ matrix.vs }}-
 
       - name: load ruby
-        timeout-minutes: 10
+        timeout-minutes: 20
         uses: MSP-Greg/setup-ruby-pkgs@v1
         with:
           ruby-version: mswin

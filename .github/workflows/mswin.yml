@@ -106,6 +106,8 @@ jobs:
         run: |
           $repo = $pwd
           del ruby-mswin\lib\x64-vcruntime140-ruby320+0-static.lib
+          del "C:/Windows/System32/libcrypto-1_1-x64.dll"
+          del "C:/Windows/System32/libssl-1_1-x64.dll"
           mkdir ruby-mswin\bin\ruby_builtin_dlls 2>&1>$null
           cd ruby-mswin\bin\ruby_builtin_dlls
           Copy-Item C:\vcpkg\installed\x64-windows\bin\readline.dll
@@ -135,12 +137,15 @@ jobs:
         shell: cmd
         run: |
           set /a JOBS=%NUMBER_OF_PROCESSORS%
+          set OPENSSL_CONF=
           set EXCL_N=--exclude test_jit --exclude test_syntax --exclude test_time_tz --exclude test_undef
           chcp 437
           set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
           set BUNDLER_VERSION=
           cd build
           nmake test-all "TESTOPTS=-j%JOBS% %EXCL_N% -v --timeout-scale=3.0 --retry --job-status=normal --show-skip"
+        env:
+          OPENSSL_CONF:
 
       - name: nmake test-all singles
         timeout-minutes: 5

@@ -47,10 +47,11 @@ jobs:
           mkdir .downloaded-cache
           mklink /j %cd%\src\.downloaded-cache %cd%\.downloaded-cache
           mkdir install
+          mkdir install
           set PRE=%cd%\ruby-mswin
           mkdir build
           cd build
-          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm %OPT_DIR:\=/%
+          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --with-opt-dir=C:/vcpkg/installed/x64-windows
 
       - name: unicode to http
         run: |
@@ -79,9 +80,9 @@ jobs:
       - name: apply patches
         run: |
           cd src
+          patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/openssl_extconf.rb.patch
           patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/test-all.patch
           patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/test-all_open_port.patch
-
       - name: nmake
         timeout-minutes: 20
         run:  |
@@ -112,7 +113,7 @@ jobs:
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1
           cd $repo
-          Copy-Item ./ssl/cert.pem ruby-mswin/ssl/cert.pem"
+          Copy-Item ./ssl/cert.pem ruby-mswin/ssl/cert.pem
           ruby-mswin/bin/ruby.exe -v mswin/copy_bash_scripts.rb
 
       - name: nmake test

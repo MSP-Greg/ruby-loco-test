@@ -282,7 +282,9 @@ Write-Host "TMPDIR = $env:TMPDIR"
 $gcc_vers = ([regex]'\d+\.\d+\.\d+').match($(gcc.exe --version)).value
 
 $files = "$d_msys2$env:MINGW_PREFIX/lib/libz.dll.a",
-         "$d_msys2$env:MINGW_PREFIX/lib/gcc/x86_64-w64-mingw32/$gcc_vers/libssp.dll.a"
+         "$d_msys2$env:MINGW_PREFIX/lib/gcc/x86_64-w64-mingw32/$gcc_vers/libssp.dll.a",
+         "C:/Windows/System32/libcrypto-1_1-x64.dll",
+         "C:/Windows/System32/libssl-1_1-x64.dll"
 
 Files-Hide $files
 
@@ -329,6 +331,19 @@ Run "make install-nodoc" {
   make install-nodoc
   cd $d_repo
   ruby 1_2_post_install.rb
+
+  $dll_path = "$d_install/bin/ruby_builtin_dlls"
+
+  if (!(Test-Path -Path $dll_path -PathType Container )) {
+    EchoC "Failed - no bin/ruby_builtin_dlls folder" red
+    exit 1
+  }
+
+  if (!(Test-Path -Path "$dll_path/ruby_builtin_dlls.manifest" -PathType Leaf )) {
+    EchoC "Failed - no bin/ruby_builtin_dlls/ruby_builtin_dlls.manifest file" red
+    exit 1
+  }
+
   $env:Path = "$d_install/bin;$d_mingw;$d_repo/git/cmd;$d_msys2/usr/bin;$base_path"
   ruby 1_3_post_install.rb
 }

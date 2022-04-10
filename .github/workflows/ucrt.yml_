@@ -20,7 +20,7 @@ jobs:
           git config --system core.eol lf
 
       - name: Checkout ruby-loco
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: get ruby and rubyinstaller2
         timeout-minutes: 5
@@ -30,13 +30,13 @@ jobs:
           git clone -q --depth=1 --no-tags --branch=master  $gh/ruby/ruby.git               ./ruby
 
       - name: Set up Ruby & MSYS2
-        timeout-minutes: 5
+        timeout-minutes: 8
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.1
 
       - name: Cache - .downloaded-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .downloaded-cache
           key: dl-cache-win-ucrt-${{ hashFiles('ruby/gems/bundled_gems') }}
@@ -47,7 +47,7 @@ jobs:
         run:  ./1_0_build_install_64.ps1
 
       - name: test
-        timeout-minutes: 50
+        timeout-minutes: 65
         run:  ./2_0_test.ps1
         env:
           APPVEYOR: 'True'

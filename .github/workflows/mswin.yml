@@ -9,9 +9,9 @@ jobs:
   mswin:
     strategy:
       matrix:
-        vs: [2019]
+        vs: [2022]
       fail-fast: false
-    runs-on: windows-2019
+    runs-on: windows-${{ matrix.vs }}
     env:
       APPVEYOR: 'True'
 
@@ -22,68 +22,59 @@ jobs:
           git config --system core.eol lf
 
       - name: repo checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Checkout ruby
         run: |
           $gh = 'https://github.com'
           git clone -q --depth=1 --no-tags --branch=master $gh/ruby/ruby.git src
-          mkdir .downloaded-cache
-
-      - name: Cache - vcpkg-download
-        uses: actions/cache@v2
-        with:
-          path: |
-            C:\vcpkg\downloads
-            C:\vcpkg\installed
-          key: vcpkg-${{ matrix.vs }}-${{ hashFiles('C:/vcpkg/installed/x64-windows/bin/libssl-*.dll', 'C:/vcpkg/installed/x64-windows/bin/readline.dll') }}
-
-      - name: Cache - .downloaded-cache
-        uses: actions/cache@v2
-        with:
-          path: .downloaded-cache
-          key: dl-cache-win-mswin-${{ matrix.vs }}-${{ hashFiles('src/gems/bundled_gems') }}
-          restore-keys: dl-cache-win-mswin-${{ matrix.vs }}-
 
       - name: load ruby
-        timeout-minutes: 20
-        uses: MSP-Greg/setup-ruby-pkgs@v1
+        timeout-minutes: 12
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: mswin
-          mswin: bison
-          vcpkg: openssl readline
+
+      - name: Cache - .downloaded-cache
+        uses: actions/cache@v3
+        with:
+          path: .downloaded-cache
+          key: dl-cache-win-mswin-${{ hashFiles('src/gems/bundled_gems') }}
 
       - name: Configure
         shell: cmd
         run: |
+          mkdir .downloaded-cache
           mklink /j %cd%\src\.downloaded-cache %cd%\.downloaded-cache
           mkdir install
           set PRE=%cd%\ruby-mswin
           mkdir build
           cd build
-          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm %OPT_DIR:\=/%
 
       - name: unicode to http
         run: |
           cd src
           patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/unicode-to-http.patch
 
+      - name: install vcpkg packages
+        run:  |
+          $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
+          cd $env:VCPKG_INSTALLATION_ROOT
+          $uri = "https://github.com/MSP-Greg/setup-msys2-gcc-priv/releases/download/msys2-gcc-pkgs/mswin.7z"
+          curl -L $uri -o $env:RUNNER_TEMP/mswin_temp.7z
+          cd $env:VCPKG_INSTALLATION_ROOT
+          &"C:\Program Files\7-Zip\7z" x $env:RUNNER_TEMP/mswin_temp.7z -aoa
+          ./vcpkg list
+        timeout-minutes: 15
+
       - name: download unicode, extlibs, zlib
         run: |
           # copy current cert file to mswin location
           curl -fsSL -o ruby-mingw.7z --retry 10 https://github.com/MSP-Greg/ruby-loco/releases/download/ruby-master/ruby-mingw.7z
           7z e ruby-mingw.7z -ossl ruby-mingw/ssl/cert.pem
-          7z e ruby-mingw.7z -ossl ruby-mingw/ssl/openssl.cnf
-          New-Item -Path "C:/vcpkg/packages/openssl_x64-windows" -ItemType Directory 1> $null
-          Copy-Item ./ssl/cert.pem    "C:/vcpkg/packages/openssl_x64-windows/cert.pem"
-          Copy-Item ./ssl/openssl.cnf "C:/vcpkg/packages/openssl_x64-windows/openssl.cnf"
-          $zlib = 'zlib1211.zip'
-          curl -fsSL -o $zlib --retry 10 https://zlib.net/$zlib
-          &'C:\Program Files\7-Zip\7z.exe' x -osrc/ext/zlib $zlib
+          Copy-Item ./ssl/cert.pem "C:/Program Files/Common Files/SSL/cert.pem"
           cd build
-          # libffi is causing error
-          nmake extract-extlibs
-          # nmake update-unicode
 
       - name: apply patches
         run: |
@@ -99,27 +90,30 @@ jobs:
 
       - name: nmake install
         run: |
+          $env:Path = "C:\vcpkg\installed\x64-windows\bin;$env:Path"
           cd build
           nmake "DESTDIR=" install-nodoc
 
       - name: misc install, ruby -v
         run: |
           $repo = $pwd
-          del ruby-mswin\lib\x64-vcruntime140-ruby320+0-static.lib
-          del "C:/Windows/System32/libcrypto-1_1-x64.dll"
-          del "C:/Windows/System32/libssl-1_1-x64.dll"
+          del ruby-mswin\lib\x64-vcruntime140-ruby320-static.lib
           mkdir ruby-mswin\bin\ruby_builtin_dlls 2>&1>$null
+          mkdir ruby-mswin\ssl                   2>&1>$null
           cd ruby-mswin\bin\ruby_builtin_dlls
+          Copy-Item C:\vcpkg\installed\x64-windows\bin\libcrypto-3-x64.dll
+          Copy-Item C:\vcpkg\installed\x64-windows\bin\libssl-3-x64.dll
+          Copy-Item C:\vcpkg\installed\x64-windows\bin\libffi.dll
+          Copy-Item C:\vcpkg\installed\x64-windows\bin\yaml.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\readline.dll
-          Copy-Item "C:\vcpkg\installed\x64-windows\bin\libcrypto-1_1-x64.dll"
-          Copy-Item "C:\vcpkg\installed\x64-windows\bin\libssl-1_1-x64.dll"
+          Copy-Item C:\vcpkg\installed\x64-windows\bin\zlib1.dll
           Copy-Item $repo\mswin\ruby_builtin_dlls.manifest
-          Move-Item -Path ..\zlib1.dll
           cd ..
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1
           cd $repo
-          ruby-mswin\bin\ruby.exe -v mswin\copy_bash_scripts.rb
+          Copy-Item ./ssl/cert.pem ruby-mswin/ssl/cert.pem"
+          ruby-mswin/bin/ruby.exe -v mswin/copy_bash_scripts.rb
 
       - name: nmake test
         timeout-minutes: 4
@@ -137,22 +131,19 @@ jobs:
         shell: cmd
         run: |
           set /a JOBS=%NUMBER_OF_PROCESSORS%
-          set OPENSSL_CONF=
-          set EXCL_N=--exclude test_jit --exclude test_syntax --exclude test_time_tz --exclude test_undef
+          set EXCL_N=--exclude test_jit --exclude test_syntax --exclude test_time_tz --exclude test_undef  --exclude test_objspace
           chcp 437
           set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
           set BUNDLER_VERSION=
           cd build
           nmake test-all "TESTOPTS=-j%JOBS% %EXCL_N% -v --timeout-scale=3.0 --retry --job-status=normal --show-skip"
-        env:
-          OPENSSL_CONF:
 
       - name: nmake test-all singles
         timeout-minutes: 5
         shell: cmd
         run: |
           set tr=../src/test/ruby
-          set TESTS=%tr%/test_jit.rb %tr%/test_syntax.rb %tr%/test_time_tz.rb %tr%/test_undef.rb
+          set TESTS=%tr%/test_jit.rb ../src/test/objspace/test_objspace.rb %tr%/test_syntax.rb %tr%/test_time_tz.rb %tr%/test_undef.rb
           chcp 437
           set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
           set BUNDLER_VERSION=
@@ -188,6 +179,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           ruby_path: ./ruby-mswin
-
-      - name: delete msys2 tar so caches work
-        run: del C:\msys64\usr\bin\tar.exe

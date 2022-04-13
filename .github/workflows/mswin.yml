@@ -53,11 +53,6 @@ jobs:
           cd build
           ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --with-opt-dir=C:/vcpkg/installed/x64-windows
 
-      - name: unicode to http
-        run: |
-          cd src
-          patch.exe -p1 -N --no-backup-if-mismatch -i ../mswin_patches/unicode-to-http.patch
-
       - name: install vcpkg packages
         run:  |
           $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
@@ -116,6 +111,8 @@ jobs:
           cd $repo
           Copy-Item .\ssl\cert.pem ruby-mswin\ssl\cert.pem
           Copy-Item "$env:VCPKG_INSTALLATION_ROOT\packages\openssl_x64-windows\openssl.cnf" ruby-mswin\ssl\openssl.cnf
+          set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
+          ruby-mswin/bin/gem install rbs --no-document --norc --no-user-install
           ruby-mswin/bin/ruby.exe -v mswin/copy_bash_scripts.rb
 
       - name: nmake test

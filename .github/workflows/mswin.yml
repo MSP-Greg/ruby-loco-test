@@ -69,12 +69,13 @@ jobs:
           ./vcpkg list
         timeout-minutes: 15
 
-      - name: download unicode, extlibs, zlib
+      - name: ssl cert.pem
         run: |
           # copy current cert file to mswin location
-          curl -fsSL -o ruby-mingw.7z --retry 10 https://github.com/MSP-Greg/ruby-loco/releases/download/ruby-master/ruby-mingw.7z
-          7z e ruby-mingw.7z -ossl ruby-mingw/ssl/cert.pem
+          curl -fsSL -o ruby-ucrt.7z --retry 10 https://github.com/MSP-Greg/ruby-loco/releases/download/ruby-master/ruby-ucrt.7z
+          7z e ruby-ucrt.7z -ossl ruby-ucrt/ssl/cert.pem
           Copy-Item ./ssl/cert.pem "C:/Program Files/Common Files/SSL/cert.pem"
+          Copy-Item ./ssl/cert.pem "$env:VCPKG_INSTALLATION_ROOT/packages/openssl_x64-windows/cert.pem"
           cd build
 
       - name: apply patches
@@ -113,7 +114,8 @@ jobs:
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1
           cd $repo
-          Copy-Item ./ssl/cert.pem ruby-mswin/ssl/cert.pem
+          Copy-Item .\ssl\cert.pem ruby-mswin\ssl\cert.pem
+          Copy-Item "$env:VCPKG_INSTALLATION_ROOT\packages\openssl_x64-windows\openssl.cnf" ruby-mswin\ssl\openssl.cnf
           ruby-mswin/bin/ruby.exe -v mswin/copy_bash_scripts.rb
 
       - name: nmake test

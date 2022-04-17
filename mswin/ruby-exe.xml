@@ -1,7 +1,8 @@
 <assembly xmlns="urn:schemas-microsoft-com:asm.v3" manifestVersion="1.0">
   <application>
-    <windowsSettings xmlns:ws2="http://schemas.microsoft.com/SMI/2016/WindowsSettings">
-      <ws2:longPathAware>true</ws2:longPathAware>
+    <windowsSettings xmlns:ws16="http://schemas.microsoft.com/SMI/2016/WindowsSettings" xmlns:ws19="http://schemas.microsoft.com/SMI/2019/WindowsSettings">
+      <ws16:longPathAware>true</ws16:longPathAware>
+      <ws19:activeCodePage>UTF-8</ws19:activeCodePage>
     </windowsSettings>
   </application>
   <trustInfo>

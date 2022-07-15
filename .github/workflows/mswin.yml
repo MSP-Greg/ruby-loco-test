@@ -32,10 +32,11 @@ jobs:
           git clone -q --depth=1 --no-tags --branch=master $gh/ruby/ruby.git src
 
       - name: load ruby
-        timeout-minutes: 12
-        uses: ruby/setup-ruby@v1
+        timeout-minutes: 30
+        uses: ruby/setup-ruby-pkgs@v1
         with:
           ruby-version: mswin
+          vcpkg: gmp
 
       - name: Cache - .downloaded-cache
         uses: actions/cache@v3
@@ -90,6 +91,8 @@ jobs:
           cd ruby-mswin\bin\ruby_builtin_dlls
           Copy-Item C:\vcpkg\installed\x64-windows\bin\libcrypto-3-x64.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\libssl-3-x64.dll
+          Copy-Item C:\vcpkg\installed\x64-windows\bin\gmp-10.dll
+          Copy-Item C:\vcpkg\installed\x64-windows\bin\gmpxx-4.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\libffi.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\yaml.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\readline.dll

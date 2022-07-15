@@ -19,7 +19,7 @@ class << self
         raise "Unknown ENV['MSYSTEM'] #{ENV['MSYSTEM']}"
       end
 
-    manifest.sub! 'LIBRUBY_SO', so_name
+    manifest.sub! 'LIBRUBY_SO', 'x64-msvcrt-ruby270.dll'
     File.write 'ruby/win32/ruby.manifest', manifest, mode: 'wb'
   end
 

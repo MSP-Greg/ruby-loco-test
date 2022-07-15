@@ -308,7 +308,7 @@ Run "sh -c `"autoreconf -fi`"" { sh -c "autoreconf -fi" }
 cd $d_build
 Time-Log "start"
 
-$config_args = "--build=$chost --host=$chost --target=$chost --with-out-ext=pty,syslog"
+$config_args = "--build=$chost --host=$chost --target=$chost --with-out-ext=pty,syslog --with-soname=x64-msvcrt-ruby270"
 Run "sh -c `"../ruby/configure --disable-install-doc --prefix=$d_install $config_args`"" {
   sh -c "../ruby/configure --disable-install-doc --prefix=$d_install $config_args"
 }

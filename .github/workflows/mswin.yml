@@ -58,7 +58,7 @@ jobs:
         run: |
           # copy current cert file to mswin location
           curl -fsSL -o ruby-ucrt.7z --retry 10 https://github.com/MSP-Greg/ruby-loco/releases/download/ruby-master/ruby-ucrt.7z
-          &"C:\Program Files\7-zip\7z.exe" e ruby-ucrt.7z -ossl ruby-ucrt/ssl/cert.pem
+          &"C:\Program Files\7-zip\7z.exe" e -aoa ruby-ucrt.7z -ossl ruby-ucrt/ssl/cert.pem
           Copy-Item .\ssl\cert.pem "C:\Program Files\Common Files\SSL\cert.pem"
           Copy-Item .\ssl\cert.pem "$env:VCPKG_INSTALLATION_ROOT\packages\openssl_x64-windows\cert.pem"
           cd build

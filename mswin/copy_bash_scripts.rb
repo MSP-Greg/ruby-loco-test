@@ -20,10 +20,11 @@ module CopyBashScripts
         File.write "#{BIN_DIR}/#{base}", str, mode: 'wb:UTF-8'
       end
 
-      # rake bash bin file
-      fn = "#{BIN_DIR}/rake"
-      str = File.read(fn, mode: 'rb:UTF-8').sub(/\A.+?ruby$/m, '#!/usr/bin/env ruby')
-      File.write fn, str, mode: 'wb:UTF-8'
+      bash_bins = Dir['bin/*'].reject { |fn| fn.match?(/\.bat|\.cmd|\.dll|\.exe/) || !File.file?(fn) }
+      bash_bins.each do |fn|
+        str = File.read(fn, mode: 'rb:UTF-8').sub(/\A.+?ruby$/m, '#!/usr/bin/env ruby')
+        File.write fn, str, mode: 'wb:UTF-8'
+      end
 
       # below replaces code in cmd files with hard coded paths
       new_cmd = <<NEW_CMD.rstrip

@@ -34,7 +34,7 @@ module CopyBashScripts
 NEW_CMD
 
       cmd_bins = Dir["#{BIN_DIR}/*.cmd"]
-      cmd_.each do |fn|
+      cmd_bins.each do |fn|
         File.write fn, new_cmd, mode: 'wb:UTF-8'
       end
     end

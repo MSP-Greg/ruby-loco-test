@@ -30,7 +30,6 @@ module CopyBashScripts
       new_cmd = <<NEW_CMD
 @ECHO OFF
 @"%~dp0ruby.exe" "%~dpn0" %*
-
 NEW_CMD
 
       cmd_bins = Dir["#{BIN_DIR}/*.cmd"]

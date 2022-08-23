@@ -12,29 +12,44 @@ module CopyBashScripts
       ary = Dir["#{Gem.dir}/gems/*"]
       ary.each { |d| Dir.rmdir(d) if Dir.empty?(d) }
 
-      bins = Dir["#{SRC_DIR}/*"]
+      bash_preamble = <<~BASH.strip.rstrip
+        {
+          bindir=$(dirname "$0")
+          exec "$bindir/ruby" "-x" "$0" "$@"
+        }
+        #!/usr/bin/env ruby
+      BASH
 
-      bins.each do |fn|
-        str = File.read(fn, mode: 'rb:UTF-8').sub(/^#![^\n]+ruby/, '#!/usr/bin/env ruby')
-        base = File.basename fn
-        File.write "#{BIN_DIR}/#{base}", str, mode: 'wb:UTF-8'
-      end
+      windows_script = <<~BAT
+        @ECHO OFF
+        @"%~dp0ruby.exe" -x "%~dpn0" %*
+      BAT
 
-      bash_bins = Dir["#{BIN_DIR}/*"].reject { |fn| fn.match?(/\.bat|\.cmd|\.dll|\.exe/) || !File.file?(fn) }
+      # all files in bin folder
+      bins = Dir["#{BIN_DIR}/*"].select { |fn| File.file? fn }
+
+      bash_bins = bins.select { |fn| File.extname(fn).empty? }
+
       bash_bins.each do |fn|
-        str = File.read(fn, mode: 'rb:UTF-8').sub(/\A.+?ruby$/m, '#!/usr/bin/env ruby')
+        str = File.read(fn, mode: 'rb:UTF-8').sub(/^#![^\n]+ruby/, bash_preamble)
         File.write fn, str, mode: 'wb:UTF-8'
+        File.chmod 755, fn
       end
 
-      # below replaces code in cmd files with hard coded paths
-      new_cmd = <<NEW_CMD
-@ECHO OFF
-@"%~dp0ruby.exe" "%~dpn0" %*
-NEW_CMD
+      windows_bins = bins.select { |fn| File.extname(fn).match?(/\A\.bat|\A\.cmd/) }
 
-      cmd_bins = Dir["#{BIN_DIR}/*.cmd"]
-      cmd_bins.each do |fn|
-        File.write fn, new_cmd, mode: 'wb:UTF-8'
+      windows_bins.each do |fn|
+        # 'gem' bash script doesn't exist
+        bash_bin = "#{BIN_DIR}/#{File.basename fn, '.*'}"
+        unless File.exist? bash_bin
+          ruby_code = File.read(fn, mode: 'rb:UTF-8').split(/^#![^\n]+ruby/,2).last.lstrip
+          File.write bash_bin, "#{bash_preamble}\n#{ruby_code}", mode: 'wb:UTF-8'
+          File.chmod 755, bash_bin
+          puts "Created file #{bash_bin}"
+        end
+
+        File.write fn, windows_script, mode: 'wb:UTF-8'
+        File.chmod 755, fn
       end
     end
   end

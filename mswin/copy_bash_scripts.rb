@@ -3,8 +3,6 @@
 module CopyBashScripts
   BIN_DIR = "#{RbConfig::TOPDIR}/bin"
 
-  SRC_DIR = "#{Dir.pwd}/src/bin"
-
   class << self
 
     def run
@@ -31,9 +29,9 @@ module CopyBashScripts
       bash_bins = bins.select { |fn| File.extname(fn).empty? }
 
       bash_bins.each do |fn|
-        str = File.read(fn, mode: 'rb:UTF-8').sub(/^#![^\n]+ruby/, bash_preamble)
-        File.write fn, str, mode: 'wb:UTF-8'
-        File.chmod 755, fn
+        ruby_code = File.read(fn, mode: 'rb:UTF-8').split(/^#![^\n]+ruby/,2).last.lstrip
+        File.write fn, "#{bash_preamble}\n#{ruby_code}", mode: 'wb:UTF-8'
+        File.chmod 0755, fn
       end
 
       windows_bins = bins.select { |fn| File.extname(fn).match?(/\A\.bat|\A\.cmd/) }

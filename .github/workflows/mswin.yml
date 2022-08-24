@@ -16,6 +16,7 @@ jobs:
     runs-on: windows-${{ matrix.vs }}
     env:
       APPVEYOR: 'True'
+      RL_DIR: ruby-mswin-31
 
     steps:
       - name: git config

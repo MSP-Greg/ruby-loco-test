@@ -1,7 +1,7 @@
 if ($env:BUNDLER_VERSION) { Remove-Item env:\BUNDLER_VERSION }
 
 $path = $env:PATH -Replace "[^;]+[Rr]uby[^;]+;",  ''
-$env:PATH = "$pwd/ruby-mswin/bin;$path"
+$env:PATH = "$pwd/$env:RL_DIR/bin;$path"
 
 ruby -ropenssl -e "puts RUBY_DESCRIPTION, OpenSSL::OPENSSL_LIBRARY_VERSION, ''"
 

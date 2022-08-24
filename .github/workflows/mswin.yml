@@ -93,7 +93,7 @@ jobs:
           Copy-Item C:\vcpkg\installed\x64-windows\bin\yaml.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\readline.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\zlib1.dll
-          Copy-Item $repo\mswin-31\ruby_builtin_dlls.manifest
+          Copy-Item $repo\mswin\ruby_builtin_dlls.manifest
           cd ..
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1

@@ -29,7 +29,7 @@ jobs:
       - name: Checkout ruby
         run: |
           $gh = 'https://github.com'
-          git clone -q --depth=1 --no-tags --branch=master $gh/ruby/ruby.git src
+          git clone -q --depth=1 --no-tags --branch=ruby_3_1 $gh/ruby/ruby.git src
 
       - name: load ruby
         timeout-minutes: 12
@@ -49,7 +49,7 @@ jobs:
           mkdir .downloaded-cache
           mklink /j %cd%\src\.downloaded-cache %cd%\.downloaded-cache
           mkdir install
-          set PRE=%cd%\ruby-mswin
+          set PRE=%cd%\ruby-mswin-31
           mkdir build
           cd build
           ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --with-opt-dir=C:/vcpkg/installed/x64-windows
@@ -83,32 +83,32 @@ jobs:
       - name: misc install, ruby -v
         run: |
           $repo = $pwd
-          del ruby-mswin\lib\x64-vcruntime140-ruby320-static.lib
-          mkdir ruby-mswin\bin\ruby_builtin_dlls 2>&1>$null
-          mkdir ruby-mswin\ssl                   2>&1>$null
-          cd ruby-mswin\bin\ruby_builtin_dlls
+          del ruby-mswin-31\lib\x64-vcruntime140-ruby320-static.lib
+          mkdir ruby-mswin-31\bin\ruby_builtin_dlls 2>&1>$null
+          mkdir ruby-mswin-31\ssl                   2>&1>$null
+          cd ruby-mswin-31\bin\ruby_builtin_dlls
           Copy-Item C:\vcpkg\installed\x64-windows\bin\libcrypto-3-x64.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\libssl-3-x64.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\libffi.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\yaml.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\readline.dll
           Copy-Item C:\vcpkg\installed\x64-windows\bin\zlib1.dll
-          Copy-Item $repo\mswin\ruby_builtin_dlls.manifest
+          Copy-Item $repo\mswin-31\ruby_builtin_dlls.manifest
           cd ..
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
           mt.exe -manifest $repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1
           cd $repo
-          Copy-Item .\ssl\cert.pem ruby-mswin\ssl\cert.pem
-          Copy-Item "$env:VCPKG_INSTALLATION_ROOT\packages\openssl_x64-windows\openssl.cnf" ruby-mswin\ssl\openssl.cnf
-          $env:Path = "$repo\ruby-mswin\bin;$repo\ruby-mswin\bin\ruby_builtin_dlls;$env:Path"
-          ruby-mswin/bin/ruby.exe -v mswin/copy_bash_scripts.rb
+          Copy-Item .\ssl\cert.pem ruby-mswin-31\ssl\cert.pem
+          Copy-Item "$env:VCPKG_INSTALLATION_ROOT\packages\openssl_x64-windows\openssl.cnf" ruby-mswin-31\ssl\openssl.cnf
+          $env:Path = "$repo\ruby-mswin-31\bin;$repo\ruby-mswin-31\bin\ruby_builtin_dlls;$env:Path"
+          ruby-mswin-31/bin/ruby.exe -v mswin/copy_bash_scripts.rb
 
       - name: nmake test
         timeout-minutes: 4
         shell: cmd
         run: |
           cd build
-          set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
+          set PATH=%cd%\ruby-mswin-31\bin;%cd%\ruby-mswin-31\bin\ruby_builtin_dlls;%PATH%
           set BUNDLER_VERSION=
           nmake test
 
@@ -121,7 +121,7 @@ jobs:
           set /a JOBS=%NUMBER_OF_PROCESSORS%
           set EXCL_N=--exclude test_mjit --exclude test_syntax --exclude test_time_tz --exclude test_undef  --exclude test_objspace
           chcp 437
-          set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
+          set PATH=%cd%\ruby-mswin-31\bin;%cd%\ruby-mswin-31\bin\ruby_builtin_dlls;%PATH%
           set BUNDLER_VERSION=
           cd build
           nmake test-all "TESTOPTS=-j%JOBS% %EXCL_N% -v --timeout-scale=3.0 --retry --job-status=normal --show-skip"
@@ -133,7 +133,7 @@ jobs:
           set tr=../src/test/ruby
           set TESTS=%tr%/test_mjit.rb ../src/test/objspace/test_objspace.rb %tr%/test_syntax.rb %tr%/test_time_tz.rb %tr%/test_undef.rb
           chcp 437
-          set PATH=%cd%\ruby-mswin\bin;%cd%\ruby-mswin\bin\ruby_builtin_dlls;%PATH%
+          set PATH=%cd%\ruby-mswin-31\bin;%cd%\ruby-mswin-31\bin\ruby_builtin_dlls;%PATH%
           set BUNDLER_VERSION=
           cd build
           nmake test-all "TESTOPTS=-v --timeout-scale=3.0"
@@ -143,7 +143,7 @@ jobs:
         shell: cmd
         run: |
           chcp 437
-          set PATH=%cd%\ruby-mswin\bin;%PATH%
+          set PATH=%cd%\ruby-mswin-31\bin;%PATH%
           set BUNDLER_VERSION=
           cd src/spec/ruby
           ruby ../mspec/bin/mspec -j -I../../tool/lib
@@ -157,7 +157,7 @@ jobs:
 
       - name: copy misc files
         run: |
-          cd ruby-mswin
+          cd ruby-mswin-31
           Copy-Item ../src/BSDL
           Copy-Item ../src/COPYING
           Copy-Item ../src/LEGAL
@@ -170,4 +170,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          ruby_path: ./ruby-mswin
+          ruby_path: ./ruby-mswin-31

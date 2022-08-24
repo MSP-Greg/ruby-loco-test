@@ -119,7 +119,7 @@ jobs:
         shell: cmd
         run: |
           set /a JOBS=%NUMBER_OF_PROCESSORS%
-          set EXCL_N=--exclude test_mjit --exclude test_syntax --exclude test_time_tz --exclude test_undef  --exclude test_objspace
+          set EXCL_N=--exclude test_jit --exclude test_syntax --exclude test_time_tz --exclude test_undef  --exclude test_objspace
           chcp 437
           set PATH=%cd%\ruby-mswin-31\bin;%cd%\ruby-mswin-31\bin\ruby_builtin_dlls;%PATH%
           set BUNDLER_VERSION=
@@ -131,7 +131,7 @@ jobs:
         shell: cmd
         run: |
           set tr=../src/test/ruby
-          set TESTS=%tr%/test_mjit.rb ../src/test/objspace/test_objspace.rb %tr%/test_syntax.rb %tr%/test_time_tz.rb %tr%/test_undef.rb
+          set TESTS=%tr%/test_jit.rb ../src/test/objspace/test_objspace.rb %tr%/test_syntax.rb %tr%/test_time_tz.rb %tr%/test_undef.rb
           chcp 437
           set PATH=%cd%\ruby-mswin-31\bin;%cd%\ruby-mswin-31\bin\ruby_builtin_dlls;%PATH%
           set BUNDLER_VERSION=

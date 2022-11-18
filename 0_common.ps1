@@ -57,7 +57,7 @@ function Remove-Read-Only($path) {
 function Set-Variables {
   if ($bits -eq 32) { $env:MSYSTEM = "MINGW32" }
 
-  if ($build_sys -eq "msys2") {
+  if ($build_sys -eq "msys2" -or $env:MAKE -eq "make.exe") {
     Switch ($env:MSYSTEM) {
       "UCRT64"  {
         $script:install = "ruby-ucrt"

@@ -67,3 +67,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           ruby_path: ./${{ env.RL_DIR }}
+
+      - name: save log artifact
+        if: success() || failure()
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ env.TEST_LOGS }}
+          path: ./logs

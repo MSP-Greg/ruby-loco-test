@@ -52,8 +52,6 @@ module PostInstall2
       Dir.mkdir dest unless Dir.exist? dest
       create_manifest dll_files, dest
 
-puts '', dll_files, ''
-
       # copy bin/ dll's
       puts "#{'installing dll files:'.ljust(COL_WID)}FROM #{msys2_dll_bin_path}"
       dll_files.each { |fn|

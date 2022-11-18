@@ -208,7 +208,7 @@ function Test-All {
   }
 
   # find absolute path for ruby repo
-  $test_dir = ((Get-Item "$d_ruby").LinkType -eq '') ?
+  $test_dir = ((Get-Item "$d_ruby").LinkType -eq $null) ?
     "$d_ruby/test" : 
     "$(Get-Item "$d_ruby" | Select-Object -ExpandProperty Target)/test"
 

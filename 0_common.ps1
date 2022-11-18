@@ -5,6 +5,8 @@ If running locally, use ./local.ps1
 
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 
+$global:orig_path = $env:Path
+
 # color hash used by EchoC and Color functions
 $clr = @{
   'red' = '[91m'
@@ -15,6 +17,29 @@ $clr = @{
   'cyn' = '[36;1m'
   'wht' = '[37;1m'
   'gry' = '[90;1m'
+}
+
+#————————————————————————————————————————————————————————————————— Set-VCVars_Env
+# Runs MSFT vcvars.bat and changes Powershell env
+function Set-VCVars-Env() {
+  $data = $(iex "cmd.exe /c '`"$vcvars`" && echo QWERTY && set'")
+
+  # Output 'header', skip to ENV data
+  $idx = 1
+  foreach ($e in $data) {
+    if ($e.trim() -eq 'QWERTY') { break }
+    echo $e
+    $idx += 1
+  }
+
+  # Replace current ENV data with changes from vcvars
+  foreach ($e in $data[$idx .. ($data.count-1)]) {
+    $key, $val = $e -split '=', 2
+    $old_val = [Environment]::GetEnvironmentVariable($key)
+    if ($old_val -ne $val) {
+      [Environment]::SetEnvironmentVariable($key, $val)
+    }
+  }
 }
 
 #—————————————————————————————————————————————————————————————— Remove-Read-Only
@@ -32,36 +57,62 @@ function Remove-Read-Only($path) {
 function Set-Variables {
   if ($bits -eq 32) { $env:MSYSTEM = "MINGW32" }
 
-  Switch ($env:MSYSTEM) {
-    "UCRT64"  {
-      $script:install = "ruby-ucrt"
-      $env:MINGW_PREFIX = "/ucrt64"
-      $env:MINGW_PACKAGE_PREFIX = "mingw-w64-ucrt-x86_64"
-      $script:march = "x86-64" ; $script:carch = "x86_64" ; $script:rarch = "x64-mingw-ucrt"
+  if ($build_sys -eq "msys2") {
+    Switch ($env:MSYSTEM) {
+      "UCRT64"  {
+        $script:install = "ruby-ucrt"
+        $env:MINGW_PREFIX = "/ucrt64"
+        $env:MINGW_PACKAGE_PREFIX = "mingw-w64-ucrt-x86_64"
+        $script:march = "x86-64" ; $script:carch = "x86_64" ; $script:rarch = "x64-mingw-ucrt"
+      }
+      "MINGW32" {
+        $script:install = "ruby-mingw32"
+        $env:MINGW_PREFIX = "/mingw32"
+        $env:MINGW_PACKAGE_PREFIX = "mingw-w64-i686"
+        $script:march = "i686"   ; $script:carch = "i686"   ; $script:rarch = "i386-mingw32"
+      }
+      default   {
+        $env:MSYSTEM = "MINGW64"
+        $script:install = "ruby-mingw"
+        $env:MINGW_PREFIX = "/mingw64"
+        $env:MINGW_PACKAGE_PREFIX = "mingw-w64-x86_64"
+        $script:march = "x86-64" ; $script:carch = "x86_64" ; $script:rarch = "x64-mingw32"
+      }
     }
-    "MINGW32" {
-      $script:install = "ruby-mingw32"
-      $env:MINGW_PREFIX = "/mingw32"
-      $env:MINGW_PACKAGE_PREFIX = "mingw-w64-i686"
-      $script:march = "i686"   ; $script:carch = "i686"   ; $script:rarch = "i386-mingw32"
-    }
-    default   {
-      $env:MSYSTEM = "MINGW64"
-      $script:install = "ruby-mingw"
-      $env:MINGW_PREFIX = "/mingw64"
-      $env:MINGW_PACKAGE_PREFIX = "mingw-w64-x86_64"
-      $script:march = "x86-64" ; $script:carch = "x86_64" ; $script:rarch = "x64-mingw32"
-    }
+
+    $script:chost   = "$carch-w64-mingw32"
+
+    # below two items appear in MSYS2 shell printenv
+    $env:MSYSTEM_CARCH = $carch
+    $env:MSYSTEM_CHOST = $chost
+
+    # not sure if below are needed, maybe just for makepkg scripts.  See
+    # https://github.com/Alexpux/MSYS2-packages/blob/master/pacman/makepkg_mingw64.conf
+    # https://github.com/Alexpux/MSYS2-packages/blob/master/pacman/makepkg_mingw32.conf
+    $env:CARCH        = $carch
+    $env:CHOST        = $chost
+    $env:MAKE         = "make.exe"
+  } else {
+    $script:install = "ruby-mswin"
+    $script:rarch   = "x64-mswin64_140"
+    $env:MAKE       = "nmake.exe"
   }
 
   if ($env:GITHUB_ACTIONS -eq 'true') {
     $script:is_actions = $true
     $script:d_msys2   = "C:/msys64"
     $script:d_git     = "$env:ProgramFiles/Git"
-    $script:7z        = "$env:ChocolateyInstall\bin\7z.exe"
+    $script:d_vcpkg   =  $env:VCPKG_INSTALLATION_ROOT
     $env:TMPDIR       =  $env:RUNNER_TEMP
-    $script:jobs = 3
     $script:base_path =  $env:Path -replace '[^;]+?(Chocolatey|CMake|OpenSSL|Ruby|Strawberry)[^;]*;', ''
+    $script:jobs      = 3
+
+    if (Test-Path -Path "$env:ProgramFiles/7-Zip/7z.exe" -PathType Leaf ) {
+      $script:7z =  "$env:ProgramFiles/7-Zip/7z.exe"
+    } else {
+      $script:7z = "$env:ChocolateyInstall\bin\7z.exe"
+    }
+
     # Write-Host ($base_path -replace ';', "`n")
   } elseif ($env:Appveyor -eq 'True') {
     $script:is_av     = $true
@@ -83,18 +134,6 @@ function Set-Variables {
     '/' + $d_repo.replace(':', '')
   } else { $d_repo }
 
-  $script:chost   = "$carch-w64-mingw32"
-
-  # below two items appear in MSYS2 shell printenv
-  $env:MSYSTEM_CARCH = $carch
-  $env:MSYSTEM_CHOST = $chost
-
-  # not sure if below are needed, maybe just for makepkg scripts.  See
-  # https://github.com/Alexpux/MSYS2-packages/blob/master/pacman/makepkg_mingw64.conf
-  # https://github.com/Alexpux/MSYS2-packages/blob/master/pacman/makepkg_mingw32.conf
-  $env:CARCH        = $carch
-  $env:CHOST        = $chost
-
   # below are folder shortcuts
   $script:d_build   = "$d_repo/build"
   $script:d_logs    = "$d_repo/logs"
@@ -115,7 +154,7 @@ function Set-Variables {
 # Returns text in color
 function Color($text, $color) {
   $c = $clr[$color.ToLower()]
-  "`e$c$text`e[0m"
+  "$c$text[0m"
 }
 
 #———————————————————————————————————————————————————————————————————— EchoC
@@ -134,3 +173,88 @@ function Enc-Info {
   iex "ruby.exe -e `"['external','filesystem','internal','locale'].each { |e| puts e.ljust(12) + Encoding.find(e).to_s }`""
   echo ''
 }
+
+#————————————————————————————————————————————————————————————————— Apply-Patches
+# Applies patches
+function Apply-Patches($p_dir) {
+  if (Test-Path -Path $p_dir -PathType Container ) {
+    $patch_exe = "$d_msys2/usr/bin/patch.exe"
+    Push-Location "$d_repo/$p_dir"
+    [string[]]$patches = Get-ChildItem -Include *.patch -Path . -Recurse |
+      select -expand name
+    Pop-Location
+    if ($patches.length -ne 0) {
+      Push-Location "$d_ruby"
+      foreach ($p in $patches) {
+        if ($p.StartsWith("__")) { continue }
+        EchoC "$($dash * 55) $p" yel
+        & $patch_exe -p1 -N --no-backup-if-mismatch -i "$d_repo/$p_dir/$p"
+      }
+      Pop-Location
+    }
+    Write-Host ''
+  }
+}
+
+#————————————————————————————————————————————————————————————————— Apply-Install-Patches
+# Applies patches in install folder
+function Apply-Install-Patches($p_dir) {
+  $patch_exe = "$d_msys2/usr/bin/patch.exe"
+  Push-Location "$d_repo/$p_dir"
+  [string[]]$patches = Get-ChildItem -Include *.patch -Path . -Recurse |
+    select -expand name
+  Pop-Location
+  Push-Location "$d_install"
+  foreach ($p in $patches) {
+    EchoC "$($dash * 55) $p" yel
+    & $patch_exe -p1 -N --no-backup-if-mismatch -i "$d_repo/$p_dir/$p"
+  }
+  Pop-Location
+  Write-Host ''
+}
+
+#———————————————————————————————————————————————————————————————— Create-Folders
+# creates build, install, log, and git folders at same place as ruby repo folder
+# most of the code is for local builds, as the folders should be cleaned
+function Create-Folders {
+  # reset to read/write
+  (Get-Item $d_repo).Attributes = 'Normal'
+
+  # create (or clean) build & install
+  if (Test-Path -Path $d_build   -PathType Container ) {
+    Remove-Read-Only  $d_build
+    Remove-Item -Path $d_build   -Recurse
+  }
+
+  if (Test-Path -Path $d_install -PathType Container ) {
+    Remove-Read-Only  $d_install
+    Remove-Item -Path $d_install -Recurse
+  }
+
+  # Don't erase contents of log folder
+  if (Test-Path -Path $d_logs    -PathType Container ) {
+    Remove-Read-Only  $d_logs
+  } else {
+    New-Item    -Path $d_logs    -ItemType Directory 1> $null
+  }
+
+  # create git symlink, which RubyGems seems to want
+  if (!(Test-Path -Path $d_repo/git -PathType Container )) {
+        New-Item  -Path $d_repo/git -ItemType Junction -Value $d_git 1> $null
+  }
+
+  # Create download cache
+  $dlc = ".downloaded-cache"
+  if (!(Test-Path -Path $d_repo/$dlc -PathType Container )) {
+         New-Item -Path $d_repo/$dlc -ItemType Directory 1> $null
+  }
+
+  # create download cache symlink
+  if (!(Test-Path -Path $d_repo/ruby/$dlc -PathType Container )) {
+        New-Item  -Path $d_repo/ruby/$dlc -ItemType Junction -Value $d_repo/$dlc 1> $null
+  }
+
+  New-Item -Path $d_build   -ItemType Directory 1> $null
+  New-Item -Path $d_install/bin/ruby_builtin_dlls -ItemType Directory 1> $null
+}
+

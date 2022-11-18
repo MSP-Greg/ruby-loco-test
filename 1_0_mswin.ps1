@@ -4,7 +4,50 @@ Assumes a Ruby exe is in path
 Assumes 'Git for Windows' is installed at $env:ProgramFiles\Git
 Assumes '7z             ' is installed at $env:ProgramFiles\7-Zip
 For local use, set items in local.ps1
+
+cmd /k "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+powershell ./mswin.ps1
 #>
+
+#————————————————————————————————————————————————————————————————— Apply-Patches
+# Applies patches in ruby source folder
+function Apply-Patches($p_dir) {
+  if (Test-Path -Path $p_dir -PathType Container ) {
+    $patch_exe = "$d_msys2/usr/bin/patch.exe"
+    Push-Location "$d_repo/$p_dir"
+    [string[]]$patches = Get-ChildItem -Include *.patch -Path . -Recurse |
+      select -expand name
+    Pop-Location
+    if ($patches.length -ne 0) {
+      Push-Location "$d_ruby"
+      foreach ($p in $patches) {
+        if ($p.StartsWith("__")) { continue }
+        EchoC "$($dash * 55) $p" yel
+        & $patch_exe -p1 -N --no-backup-if-mismatch -i "$d_repo/$p_dir/$p"
+      }
+      Pop-Location
+    }
+    Write-Host ''
+  }
+}
+
+#————————————————————————————————————————————————————————————————— Apply-Install-Patches
+# Applies patches in install folder
+function Apply-Install-Patches($p_dir) {
+  $patch_exe = "$d_msys2/usr/bin/patch.exe"
+  Push-Location "$d_repo/$p_dir"
+  [string[]]$patches = Get-ChildItem -Include *.patch -Path . -Recurse |
+    select -expand name
+  Pop-Location
+  Push-Location "$d_install"
+  foreach ($p in $patches) {
+    EchoC "$($dash * 55) $p" yel
+    & $patch_exe -p1 -N --no-backup-if-mismatch -i "$d_repo/$p_dir/$p"
+  }
+  Pop-Location
+  Write-Host ''
+}
 
 #————————————————————————————————————————————————————————————————— Files-Hide
 # Hides files for compiling/linking
@@ -68,14 +111,14 @@ function Run($e_msg, $exec) {
   if ($is_actions) {
     echo "##[group]$(color $e_msg yel)"
   } else {
-    echo "$e_msg"
+    echo "$(color $e_msg yel)"
   }
 
   &$exec
 
   Check-Exit $eMsg
   $ErrorActionPreference = $orig
-  if ($is_actions) { echo ::[endgroup] }
+  if ($is_actions) { echo ::[endgroup] } else { echo '' }
 }
 
 #——————————————————————————————————————————————————————————————————— Strip-Build
@@ -167,52 +210,28 @@ function Set-Variables-Local {
   $script:time_start = $null
 }
 
-#——————————————————————————————————————————————————————————————————————— Set-Env
-# Set ENV, including gcc flags
-function Set-Env {
-  $env:Path = "$ruby_path;$d_mingw;$d_repo/git/cmd;$d_msys2/usr/bin;$base_path"
-
-  # used in Ruby scripts
-  $env:D_MSYS2  = $d_msys2
-
-  $env:MSYS_NO_PATHCONV = 1
-
-  $env:CFLAGS   = "-march=$march -mtune=generic -O3 -pipe -fstack-protector-strong"
-  $env:CXXFLAGS = "-D_FORTIFY_SOURCE=2 -O3 -march=$march -mtune=generic -pipe"
-  $env:CPPFLAGS = "-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048"
-  $env:LDFLAGS  = "-l:libssp.a -l:libz.a -pipe -fstack-protector-strong -s"
-}
-
 #——————————————————————————————————————————————————————————————————— start build
 cd $PSScriptRoot
 
-$global:build_sys = "msys2"
+$global:build_sys = "mswin"
+$env:MINGW_PREFIX = "ucrt64"
 
 . ./0_common.ps1
+
 Set-Variables
+
 Set-Variables-Local
-Set-Env
+$env:Path = "$ruby_path;$d_repo/git/cmd;$env:Path;$d_msys2/usr/bin;$d_mingw;"
 
-Write-Host "TEMP   = $env:TEMP"
-Write-Host "TMPDIR = $env:TMPDIR"
-
-$gcc_vers = ([regex]'\d+\.\d+\.\d+').match($(gcc.exe --version)).value
-
-$files = "$d_msys2$env:MINGW_PREFIX/lib/libz.dll.a",
-         "$d_msys2$env:MINGW_PREFIX/lib/gcc/x86_64-w64-mingw32/$gcc_vers/libssp.dll.a",
-         "C:/Windows/System32/libcrypto-1_1-x64.dll",
+$files = "C:/Windows/System32/libcrypto-1_1-x64.dll",
          "C:/Windows/System32/libssl-1_1-x64.dll"
 
 Files-Hide $files
 
-Apply-Patches "patches"
+Apply-Patches "mswin_patches"
 
 Create-Folders
 
-cd $d_repo
-ruby 1_1_pre_build.rb 64
-
-cd $d_ruby
 # set time stamp for reproducible build
 $ts = $(git log -1 --format=%at).Trim()
 if ($ts -match '\A\d+\z' -and $ts -gt "1540000000") {
@@ -220,75 +239,61 @@ if ($ts -match '\A\d+\z' -and $ts -gt "1540000000") {
   # echo "SOURCE_DATE_EPOCH = $env:SOURCE_DATE_EPOCH"
 }
 
-# Run "sh -c `"autoreconf -fi`"" { sh -c "autoreconf -fi" }
-
-Run "sh -c ./autogen.sh" { sh -c "./autogen.sh" }
-
 cd $d_build
-Time-Log "start"
 
-$config_args = "--build=$chost --host=$chost --target=$chost --with-out-ext=pty,syslog"
-Run "sh -c `"../ruby/configure --disable-install-doc --prefix=$d_install $config_args`"" {
-  sh -c "../ruby/configure --disable-install-doc --prefix=$d_install $config_args"
-}
-Time-Log "configure"
+$cmd_config = "..\ruby\win32\configure.bat --disable-install-doc --prefix=$d_install --without-ext=+,dbm,gdbm --with-opt-dir=C:/vcpkg/installed/x64-windows"
+Run "$($dash * 55) configure.bat" { cmd.exe /c "$cmd_config" }
 
 # below sets some directories to normal in case they're set to read-only
 Remove-Read-Only $d_ruby
 Remove-Read-Only $d_build
 
-Run "make incs -j$jobs 2>&1" { iex "make incs -j$jobs 2>&1" }
-Time-Log "make incs -j$jobs"
+Run "$($dash * 55) nmake incs" { iex "nmake incs" }
 
-Run "make -j$jobs 2>&1" { iex "make -j$jobs 2>&1" }
-Time-Log "make -j$jobs"
+Run "$($dash * 55) nmake extract-extlibs" { iex "nmake extract-extlibs" }
+
+$env:Path = "C:\vcpkg\installed\x64-windows\bin;$env:Path"
+
+Run "$($dash * 55) nmake" { iex "nmake" }
 
 Files-Unhide $files
 
-Run "make install-nodoc" {
-  make install-nodoc
-  cd $d_repo
-  ruby 1_2_post_install.rb
-  Check-Exit "'ruby 1_2_post_install.rb' failure"
+Run "$($dash * 55) nmake 'DESTDIR=' install-nodoc" { iex "nmake `"DESTDIR=`" install-nodoc" }
 
-  $dll_path = "$d_install/bin/ruby_builtin_dlls"
+# generates string like 320, 310, etc
+$ruby_abi = ([regex]'\Aruby (\d+\.\d+)').match($(./miniruby.exe -v)).groups[1].value.replace('.', '') + '0'
 
-  if (!(Test-Path -Path $dll_path -PathType Container )) {
-    EchoC "Failed - no bin/ruby_builtin_dlls folder" red
-    exit 1
-  }
+# set correct ABI version for manifest file
+$file = "$d_repo/mswin/ruby-exe.xml"
+(Get-Content $file -raw) -replace "ruby\d{3}","ruby$ruby_abi" | Set-Content $file
 
-  if (!(Test-Path -Path "$dll_path/ruby_builtin_dlls.manifest" -PathType Leaf )) {
-    EchoC "Failed - no bin/ruby_builtin_dlls/ruby_builtin_dlls.manifest file" red
-    exit 1
-  }
+cd $d_repo
+del $d_install\lib\x64-vcruntime140-ruby$ruby_abi-static.lib
 
-  $env:Path = "$d_install/bin;$d_mingw;$d_repo/git/cmd;$d_msys2/usr/bin;$base_path"
-  ruby 1_3_post_install.rb
-  Check-Exit "'ruby 1_3_post_install.rb' failure"
-  
-  ruby 1_4_post_install_bin_files.rb
-  Check-Exit "'ruby 1_4_post_install_bin_files.rb' failure"
-}
-Time-Log "make install-nodoc"
+cd $d_install\bin\ruby_builtin_dlls
+$d_vcpkg_install = "$d_vcpkg/installed/x64-windows"
+Copy-Item $d_vcpkg_install/bin/libcrypto-3-x64.dll
+Copy-Item $d_vcpkg_install/bin/libssl-3-x64.dll
+Copy-Item $d_vcpkg_install/bin/libffi.dll
+Copy-Item $d_vcpkg_install/bin/yaml.dll
+Copy-Item $d_vcpkg_install/bin/readline.dll
+Copy-Item $d_vcpkg_install/bin/zlib1.dll
+Copy-Item $d_repo/mswin/ruby_builtin_dlls.manifest
 
-#Time-Log "post install processing"
+cd $d_repo
+# below can't run from built Ruby, as it needs valid cert files
+ruby 1_2_post_install_common.rb run
 
-Strip-Build
-Strip-Install
-Time-Log "strip build & install binary files"
+cd $d_install\bin
+EchoC "$($dash * 55) manifest ruby.exe, rubyw.exe" yel
+mt.exe -manifest $d_repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
+mt.exe -manifest $d_repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1
 
-Print-Time-Log
-
-# save extension build files
-Push-Location $d_build
-$build_files = "$d_zips/ext_build_files.7z"
-&$7z a $build_files config.log .ext\include\$rarch\ruby\*.h ext\**\Makefile ext\**\*.h ext\**\*.log ext\**\*.mk 1> $null
-if ($is_av) { Push-AppveyorArtifact $build_files -DeploymentName "Ext build files" }
-Pop-Location
-
-# apply patches to install folder
-# Apply-Install-Patches "patches_install"
+# below needs to run from built/installed Ruby
+EchoC "$($dash * 55)" yel
+cd $d_repo
+$env:Path = "$d_install\bin;$no_ruby_path"
+&"$d_install/bin/ruby.exe" 1_4_post_install_bin_files.rb
 
 if (Test-Path Env:\SOURCE_DATE_EPOCH ) { Remove-Item Env:\SOURCE_DATE_EPOCH }
 
@@ -296,8 +301,12 @@ $ruby_exe  = "$d_install/bin/ruby.exe"
 $ruby_v = &$ruby_exe -v
 
 if (-not ($ruby_v -cmatch "$rarch\]\z")) {
-  throw("Ruby may have assembly issue, won't start")
+  throw("Ruby may have compile/install issue, won't start")
 } else {
   Write-Host $ruby_v
 }
+
+# reset to original
 $env:Path = $orig_path
+
+# Apply-Patches "mswin_test_patches"

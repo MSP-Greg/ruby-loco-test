@@ -6,13 +6,17 @@
 # artifacts
 
 module TestScript
-  case ENV['MSYSTEM']
-  when 'UCRT64'
-    D_INSTALL = File.join __dir__, 'ruby-ucrt'
-  when 'MINGW32'
-    D_INSTALL = File.join __dir__, 'ruby-mingw32'
+  if ENV['MAKE'].start_with? 'nmake'
+    D_INSTALL = File.join __dir__, 'ruby-mswin'
   else
-    D_INSTALL = File.join __dir__, 'ruby-mingw'
+    case ENV['MSYSTEM']
+    when 'UCRT64'
+      D_INSTALL = File.join __dir__, 'ruby-ucrt'
+    when 'MINGW32'
+      D_INSTALL = File.join __dir__, 'ruby-mingw32'
+    else
+      D_INSTALL = File.join __dir__, 'ruby-mingw'
+    end
   end
 
   if ARGV.length == 1 && (t = ARGV[0].to_i)
@@ -37,13 +41,13 @@ module TestScript
 
   DASH = case ENV['PS_ENC']
     when 'utf-8'
-      "\u2015".dup.force_encoding 'utf-8'
+      "\u2500".dup.force_encoding 'utf-8'
     when 'Windows-1252'
       151.chr
     when 'IBM437'
       '—'
     else
-      "\u2015".dup.force_encoding 'utf-8'
+      "\u2500".dup.force_encoding 'utf-8'
     end
 
   YELLOW = "\e[93m"
@@ -102,7 +106,6 @@ module TestScript
                   "#{results_str}\n" \
                   "#{cli}\n"
 
-    puts "\n#{YELLOW}#{DASH * PUTS_LEN} Test Results#{RESET}"
     puts results_str
 
     File.binwrite File.join(D_LOGS, "Summary_Test_Results.log"), results_str

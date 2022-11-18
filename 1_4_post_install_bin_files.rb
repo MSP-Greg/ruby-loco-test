@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'fileutils'
+
+# run from build/installed Ruby
 module CopyBashScripts
   BIN_DIR = "#{RbConfig::TOPDIR}/bin"
 
@@ -11,6 +14,7 @@ module CopyBashScripts
       ary.each { |d| Dir.rmdir(d) if Dir.empty?(d) }
 
       bash_preamble = <<~BASH.strip.rstrip
+        #!
         {
           bindir=$(dirname "$0")
           exec "$bindir/ruby" "-x" "$0" "$@"
@@ -30,13 +34,8 @@ module CopyBashScripts
 
       # file permissions may not work on Windows, especially execute
       bash_bins.each do |fn|
-        File.open(fn, File::RDWR, 0755) do |fio|
-          ruby_code = fio.read.split(/^#![^\n]+ruby/,2).last.lstrip
-          fio.truncate 0
-          fio.seek 0
-          fio.write "#{bash_preamble}\n#{ruby_code}"
-          fio.chmod 0755
-        end
+        ruby_code = File.read(fn, mode: 'rb:UTF-8').split(/^#![^\n]+ruby/,2).last.lstrip
+        File.write fn, "#{bash_preamble}\n#{ruby_code}", mode: 'wb:UTF-8'
       end
 
       windows_bins = bins.select { |fn| File.extname(fn).match?(/\A\.bat|\A\.cmd/) }
@@ -47,13 +46,35 @@ module CopyBashScripts
         unless File.exist? bash_bin
           ruby_code = File.read(fn, mode: 'rb:UTF-8').split(/^#![^\n]+ruby/,2).last.lstrip
           File.write bash_bin, "#{bash_preamble}\n#{ruby_code}", mode: 'wb:UTF-8'
-          File.chmod 0755, bash_bin
         end
 
         File.write fn, windows_script, mode: 'wb:UTF-8'
-        File.chmod 0755, fn
       end
     end
+
+    def fix_rbs_debug_ext
+      debug_gem = Dir.glob("#{Gem.default_dir}/gems/debug-*").first
+      debug_name = File.basename debug_gem
+      unless File.exist? "#{debug_gem}/lib/debug/debug.so"
+        ext_path = "#{Gem.default_dir}/extensions/#{RUBY_PLATFORM.tr '_', '-'}/" \
+          "#{RbConfig::CONFIG['ruby_version']}/#{debug_name}"
+        if File.exist? "#{ext_path}/debug/debug.so"
+          FileUtils.cp "#{ext_path}/debug/debug.so", "#{debug_gem}/lib/debug/debug.so"
+        end
+      end
+
+      rbs_gem = Dir.glob("#{Gem.default_dir}/gems/rbs-*").first
+      rbs_name = File.basename rbs_gem
+      unless File.exist? "#{rbs_gem}/lib/rbs_extension.so"
+        ext_path = "#{Gem.default_dir}/extensions/#{RUBY_PLATFORM.tr '_', '-'}/" \
+          "#{RbConfig::CONFIG['ruby_version']}/#{rbs_name}"
+        if File.exist? "#{ext_path}/rbs_extension.so"
+          FileUtils.cp "#{ext_path}/rbs_extension.so", "#{rbs_gem}/lib/rbs_extension.so"
+        end
+      end
+    end
+
   end
 end
-CopyBashScripts.run
+#CopyBashScripts.run
+CopyBashScripts.fix_rbs_debug_ext

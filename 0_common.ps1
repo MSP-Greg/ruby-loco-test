@@ -42,16 +42,6 @@ function Set-VCVars-Env() {
   }
 }
 
-#—————————————————————————————————————————————————————————————— Remove-Read-Only
-# removes readonly from folder and all child directories
-function Remove-Read-Only($path) {
-  (Get-Item $path).Attributes = 'Normal'
-  Get-ChildItem -Path $path -Directory -Force -Recurse |
-    foreach {$_.Attributes = 'Normal'}
-  Get-ChildItem -Path $path -File -Force -Recurse |
-    Set-ItemProperty -Name IsReadOnly -Value $false
-}
-
 #————————————————————————————————————————————————————————————————— Set-Variables
 # set base variables, including MSYS2 location and bit related varis
 function Set-Variables {
@@ -213,6 +203,16 @@ function Apply-Install-Patches($p_dir) {
   Write-Host ''
 }
 
+#———————————————————————————————————————————————————————————————————— Check-Exit
+# checks whether to exit
+function Check-Exit($msg, $pop) {
+  if ($LastExitCode -and $LastExitCode -ne 0) {
+    if ($pop) { Pop-Location }
+    EchoC "Failed - $msg" yel
+    exit 1
+  }
+}
+
 #———————————————————————————————————————————————————————————————— Create-Folders
 # creates build, install, log, and git folders at same place as ruby repo folder
 # most of the code is for local builds, as the folders should be cleaned
@@ -258,3 +258,74 @@ function Create-Folders {
   New-Item -Path $d_install/bin/ruby_builtin_dlls -ItemType Directory 1> $null
 }
 
+#————————————————————————————————————————————————————————————————— Files-Hide
+# Hides files for compiling/linking
+function Files-Hide($f_ary) {
+  foreach ($f in $f_ary) {
+    if (Test-Path -Path $f -PathType Leaf ) { ren $f ($f + '__') }
+  }
+}
+
+#————————————————————————————————————————————————————————————————— Files-Unhide
+# UnHides files previously hidden
+function Files-Unhide($f_ary) {
+  foreach ($f in $f_ary) {
+    if (Test-Path -Path ($f + '__') -PathType Leaf ) { ren ($f + '__') $f }
+  }
+}
+
+#———————————————————————————————————————————————————————————————— Print-Time-Log
+function Print-Time-Log {
+  $diff = New-TimeSpan -Start $script:time_start -End $script:time_old
+  $script:time_info += ("{0:mm}:{0:ss} {1}" -f @($diff, "Total"))
+
+  EchoC $($dash * 80) yel
+  Write-Host $script:time_info
+  $fn = "$d_logs/time_log_build.log"
+  [IO.File]::WriteAllText($fn, $script:time_info, $UTF8)
+  if ($is_av) {
+    Add-AppveyorMessage -Message "Time Log Build" -Details $script:time_info
+  }
+}
+
+#—————————————————————————————————————————————————————————————————————— Time-Log
+function Time-Log($msg) {
+  if ($script:time_old) {
+    $time_new = Get-Date
+    $diff = New-TimeSpan -Start $time_old -End $time_new
+    $script:time_old = $time_new
+    $script:time_info += ("{0:mm}:{0:ss} {1}`n" -f @($diff, $msg))
+  } else {
+    $script:time_old   = Get-Date
+    $script:time_start = $script:time_old
+  }
+}
+
+#—————————————————————————————————————————————————————————————— Remove-Read-Only
+# removes readonly from folder and all child directories
+function Remove-Read-Only($path) {
+  (Get-Item $path).Attributes = 'Normal'
+  Get-ChildItem -Path $path -Directory -Force -Recurse |
+    foreach {$_.Attributes = 'Normal'}
+  Get-ChildItem -Path $path -File -Force -Recurse |
+    Set-ItemProperty -Name IsReadOnly -Value $false
+}
+
+#——————————————————————————————————————————————————————————————————————————— Run
+# Run a command and check for error
+function Run($e_msg, $exec) {
+  $orig = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+
+  if ($is_actions) {
+    echo "##[group]$(color $e_msg yel)"
+  } else {
+    echo "$(color $e_msg yel)"
+  }
+
+  &$exec
+
+  Check-Exit $eMsg
+  $ErrorActionPreference = $orig
+  if ($is_actions) { echo ::[endgroup] } else { echo '' }
+}

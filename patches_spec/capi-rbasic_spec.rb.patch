@@ -1,0 +1,25 @@
+diff --git a/spec/ruby/optional/capi/rbasic_spec.rb b/spec/ruby/optional/capi/rbasic_spec.rb
+index 6300680d99..577f2060da 100644
+--- a/spec/ruby/optional/capi/rbasic_spec.rb
++++ b/spec/ruby/optional/capi/rbasic_spec.rb
+@@ -1,7 +1,6 @@
+ require_relative 'spec_helper'
+ require_relative 'shared/rbasic'
+ load_extension("rbasic")
+-return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
+ load_extension("data")
+ load_extension("array")
+ 
+diff --git a/spec/ruby/optional/capi/spec_helper.rb b/spec/ruby/optional/capi/spec_helper.rb
+index ec6b909397..f9b358d015 100644
+--- a/spec/ruby/optional/capi/spec_helper.rb
++++ b/spec/ruby/optional/capi/spec_helper.rb
+@@ -34,7 +34,7 @@ def compile_extension(name)
+   abi_header = "#{rubyhdrdir}/ruby/internal/abi.h"
+ 
+   if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
+-    libdirname = RbConfig::CONFIG['libdirname'] # defined since 2.1
++    libdirname = RbConfig::CONFIG.fetch 'libdirname', 'libdir' # defined since 2.1
+     libruby = "#{RbConfig::CONFIG[libdirname]}/#{RbConfig::CONFIG['LIBRUBY']}"
+   end
+ 

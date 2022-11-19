@@ -310,12 +310,19 @@ if ($install -ne "ruby-mswin") {
 }
 
 echo ''
-EchoC "$($dash * 74) Runs Tests" yel
+EchoC "$($dash * 74) Run Tests" yel
 
 BasicTest
 sleep 2
 BootStrapTest
 sleep 2
+
+if ($install -eq "ruby-mswin") {
+  if (Test-Path -Path $d_install/lib/ruby/$abi/$rarch/readline.so -PathType Leaf ) {
+    ren "$d_install/lib/ruby/$abi/$rarch/readline.so" "readline.so_"
+  }
+}
+
 Test-All
 sleep 5
 Test-Reline

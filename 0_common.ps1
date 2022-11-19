@@ -320,7 +320,8 @@ function Run($e_msg, $exec) {
   if ($is_actions) {
     echo "##[group]$(color $e_msg yel)"
   } else {
-    echo "$(color $e_msg yel)"
+    $e_str = "$($dash * 55) $e_msg"
+    echo "$(color $e_str yel)"
   }
 
   &$exec

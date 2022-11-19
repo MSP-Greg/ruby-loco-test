@@ -46,56 +46,62 @@ if ($ts -match '\A\d+\z' -and $ts -gt "1540000000") {
 
 cd $d_build
 
+Time-Log "start"
+
 $cmd_config = "..\ruby\win32\configure.bat --disable-install-doc --prefix=$d_install --without-ext=+,dbm,gdbm --with-opt-dir=C:/vcpkg/installed/x64-windows"
 Run "configure.bat" { cmd.exe /c "$cmd_config" }
+Time-Log "configure"
 
 # below sets some directories to normal in case they're set to read-only
 Remove-Read-Only $d_ruby
 Remove-Read-Only $d_build
 
 Run "nmake incs" { iex "nmake incs" }
+Time-Log "make incs"
 
 Run "nmake extract-extlibs" { iex "nmake extract-extlibs" }
+Time-Log "nmake extract-extlibs"
 
 $env:Path = "C:\vcpkg\installed\x64-windows\bin;$env:Path"
 
 Run "nmake" { iex "nmake" }
+Time-Log "nmake"
 
 Files-Unhide $files
 
-Run "nmake 'DESTDIR=' install-nodoc" { iex "nmake `"DESTDIR=`" install-nodoc" }
+Run "nmake 'DESTDIR=' install-nodoc" {
+  nmake "DESTDIR=" install-nodoc
+  # generates string like 320, 310, etc
+  $ruby_abi = ([regex]'\Aruby (\d+\.\d+)').match($(./miniruby.exe -v)).groups[1].value.replace('.', '') + '0'
+  # set correct ABI version for manifest file
+  $file = "$d_repo/mswin/ruby-exe.xml"
+  (Get-Content $file -raw) -replace "ruby\d{3}","ruby$ruby_abi" | Set-Content $file
+  cd $d_install\bin\ruby_builtin_dlls
+  $d_vcpkg_install = "$d_vcpkg/installed/x64-windows"
+  Copy-Item $d_vcpkg_install/bin/libcrypto-3-x64.dll
+  Copy-Item $d_vcpkg_install/bin/libssl-3-x64.dll
+  Copy-Item $d_vcpkg_install/bin/libffi.dll
+  Copy-Item $d_vcpkg_install/bin/yaml.dll
+  Copy-Item $d_vcpkg_install/bin/readline.dll
+  Copy-Item $d_vcpkg_install/bin/zlib1.dll
+  Copy-Item $d_repo/mswin/ruby_builtin_dlls.manifest
 
-# generates string like 320, 310, etc
-$ruby_abi = ([regex]'\Aruby (\d+\.\d+)').match($(./miniruby.exe -v)).groups[1].value.replace('.', '') + '0'
+  cd $d_repo
+  del $d_install\lib\x64-vcruntime140-ruby$ruby_abi-static.lib
+  # below can't run from built Ruby, as it needs valid cert files
+  ruby 1_2_post_install_common.rb run
+}
+Time-Log "make install-nodoc"
 
-# set correct ABI version for manifest file
-$file = "$d_repo/mswin/ruby-exe.xml"
-(Get-Content $file -raw) -replace "ruby\d{3}","ruby$ruby_abi" | Set-Content $file
+Print-Time-Log
 
-cd $d_repo
-del $d_install\lib\x64-vcruntime140-ruby$ruby_abi-static.lib
-
-cd $d_install\bin\ruby_builtin_dlls
-$d_vcpkg_install = "$d_vcpkg/installed/x64-windows"
-Copy-Item $d_vcpkg_install/bin/libcrypto-3-x64.dll
-Copy-Item $d_vcpkg_install/bin/libssl-3-x64.dll
-Copy-Item $d_vcpkg_install/bin/libffi.dll
-Copy-Item $d_vcpkg_install/bin/yaml.dll
-Copy-Item $d_vcpkg_install/bin/readline.dll
-Copy-Item $d_vcpkg_install/bin/zlib1.dll
-Copy-Item $d_repo/mswin/ruby_builtin_dlls.manifest
-
-cd $d_repo
-# below can't run from built Ruby, as it needs valid cert files
-ruby 1_2_post_install_common.rb run
-
-cd $d_install\bin
-EchoC "$($dash * 55) manifest ruby.exe, rubyw.exe" yel
-mt.exe -manifest $d_repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
-mt.exe -manifest $d_repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1
+Run "manifest ruby.exe, rubyw.exe" {
+  cd $d_install\bin
+  mt.exe -manifest $d_repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
+  mt.exe -manifest $d_repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1
+}
 
 # below needs to run from built/installed Ruby
-EchoC "$($dash * 55)" yel
 cd $d_repo
 $env:Path = "$d_install\bin;$no_ruby_path"
 &"$d_install/bin/ruby.exe" 1_4_post_install_bin_files.rb

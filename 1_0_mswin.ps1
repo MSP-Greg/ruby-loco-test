@@ -76,14 +76,16 @@ Run "nmake 'DESTDIR=' install-nodoc" {
   # set correct ABI version for manifest file
   $file = "$d_repo/mswin/ruby-exe.xml"
   (Get-Content $file -raw) -replace "ruby\d{3}","ruby$ruby_abi" | Set-Content $file
+
   cd $d_install\bin\ruby_builtin_dlls
   $d_vcpkg_install = "$d_vcpkg/installed/x64-windows"
-  Copy-Item $d_vcpkg_install/bin/libcrypto-3-x64.dll
-  Copy-Item $d_vcpkg_install/bin/libssl-3-x64.dll
-  Copy-Item $d_vcpkg_install/bin/libffi.dll
-  Copy-Item $d_vcpkg_install/bin/yaml.dll
-  Copy-Item $d_vcpkg_install/bin/readline.dll
-  Copy-Item $d_vcpkg_install/bin/zlib1.dll
+  echo "installing dll files:               From $d_vcpkg_install/bin"
+  $dlls = @('libcrypto-3-x64', 'libssl-3-x64', 'libffi', 'readline', 'yaml', 'zlib1')
+  foreach ($dll in $dlls) {
+    Copy-Item $d_vcpkg_install/bin/$dll.dll
+    echo "                                    $dll.dll"
+  }
+
   Copy-Item $d_repo/mswin/ruby_builtin_dlls.manifest
 
   cd $d_repo

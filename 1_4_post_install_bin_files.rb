@@ -76,5 +76,5 @@ module CopyBashScripts
 
   end
 end
-#CopyBashScripts.run
+CopyBashScripts.run
 CopyBashScripts.fix_rbs_debug_ext

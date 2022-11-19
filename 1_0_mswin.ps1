@@ -93,13 +93,14 @@ Run "nmake 'DESTDIR=' install-nodoc" {
 }
 Time-Log "make install-nodoc"
 
-Print-Time-Log
-
 Run "manifest ruby.exe, rubyw.exe" {
   cd $d_install\bin
   mt.exe -manifest $d_repo\mswin\ruby-exe.xml -outputresource:ruby.exe;1
   mt.exe -manifest $d_repo\mswin\ruby-exe.xml -outputresource:rubyw.exe;1
 }
+Time-Log "manifest ruby.exe, rubyw.exe"
+
+Print-Time-Log
 
 # below needs to run from built/installed Ruby
 cd $d_repo

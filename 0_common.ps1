@@ -7,6 +7,24 @@ $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 
 $global:orig_path = $env:Path
 
+if ($args.length -eq 1) {
+  Switch ($args[0]) {
+    'ucrt'  {
+      $global:build_sys = 'msys2'
+      $env:MSYSTEM      = 'UCRT64'
+    }
+    'mingw'  {
+      $global:build_sys = 'msys2'
+      $env:MSYSTEM      = 'MINGW64'
+    }
+    'mswin'  {
+      $global:build_sys = 'mswin'
+      $env:MSYSTEM      = 'UCRT64'
+      $env:MINGW_PREFIX = 'ucrt64'
+    }
+  }
+}
+
 # color hash used by EchoC and Color functions
 $clr = @{
   'red' = '[91m'

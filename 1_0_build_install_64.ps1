@@ -114,9 +114,7 @@ function Set-Env {
 #——————————————————————————————————————————————————————————————————— start build
 cd $PSScriptRoot
 
-$global:build_sys = "msys2"
-
-. ./0_common.ps1
+. ./0_common.ps1 $args
 Set-Variables
 Set-Variables-Local
 Set-Env

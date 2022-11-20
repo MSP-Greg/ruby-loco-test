@@ -263,7 +263,7 @@ function MSpec {
 
 #————————————————————————————————————————————————————————————————————————— setup
 cd $PSScriptRoot
-. ./0_common.ps1
+. ./0_common.ps1 $args
 Set-Variables
 
 # apply patches for testing
@@ -327,7 +327,6 @@ Test-All
 sleep 5
 Test-Reline
 sleep 5
-
 MSpec
 
 if (Test-Path -Path $d_install/lib/ruby/$abi/$rarch/readline.so -PathType Leaf ) {

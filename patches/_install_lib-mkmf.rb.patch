@@ -1,5 +1,6 @@
 Patch by MSP-Greg
-Allows using mkmf.rb when running test-all tests from install
+Allows using mkmf.rb when running test-all tests from install.
+mkmf.rb creates several global variables
 diff --git a/lib/mkmf.rb b/lib/mkmf.rb
 index 4ced064a8b..c743b253d1 100644
 --- a/lib/mkmf.rb

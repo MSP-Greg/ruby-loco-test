@@ -18,8 +18,8 @@ function Set-Variables-Local {
 #——————————————————————————————————————————————————————————————————— start build
 cd $PSScriptRoot
 
-$global:build_sys = "mswin"
-$env:MINGW_PREFIX = "ucrt64"
+$global:build_sys = 'mswin'
+$env:MINGW_PREFIX = 'ucrt64'
 
 . ./0_common.ps1
 

@@ -186,6 +186,7 @@ function Enc-Info {
 # Applies patches
 function Apply-Patches($p_dir) {
   if (Test-Path -Path $p_dir -PathType Container ) {
+    EchoC "$($dash * 55) $p_dir" yel
     $patch_exe = "$d_msys2/usr/bin/patch.exe"
     Push-Location "$d_repo/$p_dir"
     [string[]]$patches = Get-ChildItem -Include *.patch -Path . -Recurse |
@@ -195,12 +196,13 @@ function Apply-Patches($p_dir) {
       Push-Location "$d_ruby"
       foreach ($p in $patches) {
         if ($p.StartsWith("__")) { continue }
-        EchoC "$($dash * 55) $p" yel
-        & $patch_exe -p1 -N --no-backup-if-mismatch -i "$d_repo/$p_dir/$p"
+        EchoC "$p" yel
+        $out = $(& $patch_exe -p1 -N --no-backup-if-mismatch -i "$d_repo/$p_dir/$p")
+        $out -replace '^', '  '
+        echo ''
       }
       Pop-Location
     }
-    Write-Host ''
   }
 }
 

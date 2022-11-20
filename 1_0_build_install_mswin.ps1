@@ -19,9 +19,8 @@ function Set-Variables-Local {
 cd $PSScriptRoot
 
 $global:build_sys = 'mswin'
-$env:MINGW_PREFIX = 'ucrt64'
 
-. ./0_common.ps1
+. ./0_common.ps1 mswin
 
 Set-Variables
 

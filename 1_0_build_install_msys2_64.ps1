@@ -39,7 +39,7 @@ function Strip-Build {
   }
   $msg = "Build:   Stripped {0,2} dll files, {1,2} exe files, and {2,3} so files" -f `
     @($dlls.length, $exes.length, $sos.length)
-  EchoC $($dash * 80) yel
+  EchoC $dash_line yel
   echo $msg
   Pop-Location
 }
@@ -81,7 +81,7 @@ function Strip-Install {
 
   $msg = "Install: Stripped {0,2} dll files, {1,2} exe files, and {2,3} so files" -f `
     @($dlls.length, $exes.length, $sos.length)
-  EchoC $($dash * 80) yel
+  EchoC $dash_line yel
   echo $msg
   Pop-Location
 }

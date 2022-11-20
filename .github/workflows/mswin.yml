@@ -48,11 +48,11 @@ jobs:
 
       - name: build & install
         timeout-minutes: 30
-        run:  ./1_0_mswin.ps1
+        run:  ./1_0_build_install_mswin.ps1
 
       - name: test
         timeout-minutes: 70
-        run:  ./2_0_test.ps1
+        run:  ./2_0_test.ps1 mswin
         env:
           APPVEYOR: 'True'
 

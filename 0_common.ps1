@@ -153,7 +153,8 @@ function Set-Variables {
 
   $script:fc   = "Yellow"
   $script:dash = "$([char]0x2500)"
-  $script:dl   = $($dash * 80)
+  $script:dash_line = $($dash * 80)
+  $script:dash_hdr  = $($dash * 74)
 
   $script:UTF8 = $(New-Object System.Text.UTF8Encoding $False)
 }
@@ -186,7 +187,7 @@ function Enc-Info {
 # Applies patches
 function Apply-Patches($p_dir) {
   if (Test-Path -Path $p_dir -PathType Container ) {
-    EchoC "$($dash * 55) $p_dir" yel
+    EchoC "$dash_hdr $p_dir" yel
     $patch_exe = "$d_msys2/usr/bin/patch.exe"
     Push-Location "$d_repo/$p_dir"
     [string[]]$patches = Get-ChildItem -Include *.patch -Path . -Recurse |
@@ -209,18 +210,24 @@ function Apply-Patches($p_dir) {
 #————————————————————————————————————————————————————————————————— Apply-Install-Patches
 # Applies patches in install folder
 function Apply-Install-Patches($p_dir) {
-  $patch_exe = "$d_msys2/usr/bin/patch.exe"
-  Push-Location "$d_repo/$p_dir"
-  [string[]]$patches = Get-ChildItem -Include *.patch -Path . -Recurse |
-    select -expand name
-  Pop-Location
-  Push-Location "$d_install"
-  foreach ($p in $patches) {
-    EchoC "$($dash * 55) $p" yel
-    & $patch_exe -p1 -N --no-backup-if-mismatch -i "$d_repo/$p_dir/$p"
+  if (Test-Path -Path $p_dir -PathType Container ) {
+    EchoC "$dash_hdr $p_dir" yel
+    $patch_exe = "$d_msys2/usr/bin/patch.exe"
+    Push-Location "$d_repo/$p_dir"
+    [string[]]$patches = Get-ChildItem -Include *.patch -Path . -Recurse |
+      select -expand name
+    Pop-Location
+    if ($patches.length -ne 0) {
+      Push-Location "$d_install"
+      foreach ($p in $patches) {
+        EchoC "$p" yel
+        $out = $(& $patch_exe -p1 -N --no-backup-if-mismatch -i "$d_repo/$p_dir/$p")
+        $out -replace '^', '  '
+        echo ''
+      }
+      Pop-Location
+    }
   }
-  Pop-Location
-  Write-Host ''
 }
 
 #———————————————————————————————————————————————————————————————————— Check-Exit
@@ -264,14 +271,14 @@ function Create-Folders {
   }
 
   # Create download cache
-  $dlc = ".downloaded-cache"
-  if (!(Test-Path -Path $d_repo/$dlc -PathType Container )) {
-         New-Item -Path $d_repo/$dlc -ItemType Directory 1> $null
+  $dl_cache = ".downloaded-cache"
+  if (!(Test-Path -Path $d_repo/$dl_cache -PathType Container )) {
+         New-Item -Path $d_repo/$dl_cache -ItemType Directory 1> $null
   }
 
   # create download cache symlink
-  if (!(Test-Path -Path $d_repo/ruby/$dlc -PathType Container )) {
-        New-Item  -Path $d_repo/ruby/$dlc -ItemType Junction -Value $d_repo/$dlc 1> $null
+  if (!(Test-Path -Path $d_repo/ruby/$dl_cache -PathType Container )) {
+        New-Item  -Path $d_repo/ruby/$dl_cache -ItemType Junction -Value $d_repo/$dl_cache 1> $null
   }
 
   New-Item -Path $d_build   -ItemType Directory 1> $null
@@ -299,7 +306,7 @@ function Print-Time-Log {
   $diff = New-TimeSpan -Start $script:time_start -End $script:time_old
   $script:time_info += ("{0:mm}:{0:ss} {1}" -f @($diff, "Total"))
 
-  EchoC $($dash * 80) yel
+  EchoC $dash_line yel
   Write-Host $script:time_info
   $fn = "$d_logs/time_log_build.log"
   [IO.File]::WriteAllText($fn, $script:time_info, $UTF8)

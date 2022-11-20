@@ -134,7 +134,7 @@ function Finish {
   # used in 2_1_test_script.rb
   $env:PS_ENC = [Console]::OutputEncoding.WebName.toUpper()
 
-  EchoC "$($dash * 74)  Test Results" yel
+  EchoC "$dash_hdr Test Results" yel
 
   cd $d_repo
   # script checks test results, determines whether build is good or not,
@@ -159,7 +159,7 @@ function BasicTest {
     -e_args "--disable=gems ruby_runner.rb -r -v --tty=no" `
     -StdOut "test_basic.log" `
     -StdErr "test_basic_err.log" `
-    -Title  "test-basic     (basictest)" `
+    -Title  "test-basic   (basictest)" `
     -Dir    "$d_ruby/basictest" `
     -TimeLimit 20
 }
@@ -173,7 +173,7 @@ function BootStrapTest {
     -e_args "--disable=gems runner.rb --ruby=`"$ruby_exe --disable=gems`" -v" `
     -StdOut "test_bootstrap.log" `
     -StdErr "test_bootstrap_err.log" `
-    -Title  "btest      (bootstraptest)" `
+    -Title  "btest        (bootstraptest)" `
     -Dir    "$d_ruby/bootstraptest" `
     -TimeLimit 200
 }
@@ -292,11 +292,11 @@ $m_start = Get-Date
 EchoC $($dash * 92) yel
 ruby -ropenssl -e "puts RUBY_DESCRIPTION, OpenSSL::OPENSSL_LIBRARY_VERSION"
 
-EchoC "$($dash * 74) Install `'tz`' gems" yel
+EchoC "$dash_hdr Install `'tz`' gems" yel
 gem install `"timezone:>=1.3.16`" `"tzinfo:>=2.0.4`" `"tzinfo-data:>=1.2022.1`" --no-document --conservative --norc --no-user-install
 
 # CLI-Test
-EchoC "$($dash * 74) CLI Test" yel
+EchoC "$dash_hdr CLI Test" yel
 echo "bundle version: $(bundle version)" ; $exit_code += [int](0 + $LastExitCode)
 echo "gem  --version: $(gem --version)"  ; $exit_code += [int](0 + $LastExitCode)
 echo "irb  --version: $(irb --version)"  ; $exit_code += [int](0 + $LastExitCode)
@@ -310,7 +310,7 @@ if ($install -ne "ruby-mswin") {
 }
 
 echo ''
-EchoC "$($dash * 74) Run Tests" yel
+EchoC "$dash_hdr Run Tests" yel
 
 BasicTest
 sleep 2

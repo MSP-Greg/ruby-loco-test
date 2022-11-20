@@ -13,6 +13,7 @@ function Set-Variables-Local {
   $script:time_info = ''
   $script:time_old  = $null
   $script:time_start = $null
+  $script:d_vcpkg_install = "$vcpkg/installed/x64-windows"
 }
 
 #——————————————————————————————————————————————————————————————————— start build
@@ -47,8 +48,8 @@ cd $d_build
 
 Time-Log "start"
 
-$cmd_config = "..\ruby\win32\configure.bat --disable-install-doc --prefix=$d_install --without-ext=+,dbm,gdbm --with-opt-dir=C:/vcpkg/installed/x64-windows"
-Run "configure.bat" { cmd.exe /c "$cmd_config" }
+$cmd_config = "..\ruby\win32\configure.bat --disable-install-doc --prefix=$d_install --without-ext=+,dbm,gdbm --with-opt-dir=$d_vcpkg_install"
+Run $cmd_config { cmd.exe /c "$cmd_config" }
 Time-Log "configure"
 
 # below sets some directories to normal in case they're set to read-only
@@ -61,7 +62,7 @@ Time-Log "make incs"
 Run "nmake extract-extlibs" { iex "nmake extract-extlibs" }
 Time-Log "nmake extract-extlibs"
 
-$env:Path = "C:\vcpkg\installed\x64-windows\bin;$env:Path"
+$env:Path = "$d_vcpkg_install\bin;$env:Path"
 
 Run "nmake" { iex "nmake" }
 Time-Log "nmake"
@@ -77,7 +78,6 @@ Run "nmake 'DESTDIR=' install-nodoc" {
   (Get-Content $file -raw) -replace "ruby\d{3}","ruby$ruby_abi" | Set-Content $file
 
   cd $d_install\bin\ruby_builtin_dlls
-  $d_vcpkg_install = "$d_vcpkg/installed/x64-windows"
   echo "installing dll files:               From $d_vcpkg_install/bin"
   $dlls = @('libcrypto-3-x64', 'libssl-3-x64', 'libffi', 'readline', 'yaml', 'zlib1')
   foreach ($dll in $dlls) {

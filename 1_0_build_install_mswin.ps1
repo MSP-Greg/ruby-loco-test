@@ -13,7 +13,7 @@ function Set-Variables-Local {
   $script:time_info = ''
   $script:time_old  = $null
   $script:time_start = $null
-  $script:d_vcpkg_install = "$vcpkg/installed/x64-windows"
+  $script:d_vcpkg_install = "$d_vcpkg/installed/x64-windows"
 }
 
 #——————————————————————————————————————————————————————————————————— start build

@@ -199,7 +199,7 @@ function Test-All {
   # for rubygems/test_bundled_ca.rb
   $env:TEST_SSL = '1'
 
-  if ($install -ne "ruby-mswin") {
+  if ($build_sys -ne 'mswin') {
     $args = "--disable=gems -rdevkit ./runner.rb -X ./excludes -n !/memory_leak/ -j $jobs" + `
       " -v --show-skip --retry --job-status=normal --timeout-scale=1.5"
   } else {
@@ -245,7 +245,7 @@ function Test-Reline {
 function MSpec {
   $env:PATH = "$d_install/bin;$d_repo/git/cmd;$base_path"
 
-  if ($install -ne "ruby-mswin") {
+  if ($build_sys -ne 'mswin') {
     $args = "-rdevkit ../mspec/bin/mspec -j -fd -I$d_ruby/tool/lib"
   } else {
     $args = "../mspec/bin/mspec -j -fd -I$d_ruby/tool/lib"
@@ -304,7 +304,7 @@ echo "racc --version: $(racc --version)" ; $exit_code += [int](0 + $LastExitCode
 echo "rake --version: $(rake --version)" ; $exit_code += [int](0 + $LastExitCode)
 echo "rbs  --version: $(rbs --version)"  ; $exit_code += [int](0 + $LastExitCode)
 echo "rdoc --version: $(rdoc --version)" ; $exit_code += [int](0 + $LastExitCode)
-if ($install -ne "ruby-mswin") {
+if ($build_sys -ne 'mswin') {
   echo "ridk   version:"
   ridk version
 }
@@ -317,7 +317,7 @@ sleep 2
 BootStrapTest
 sleep 2
 
-if ($install -eq "ruby-mswin") {
+if ($build_sys -ne 'mswin') {
   if (Test-Path -Path $d_install/lib/ruby/$abi/$rarch/readline.so -PathType Leaf ) {
     ren "$d_install/lib/ruby/$abi/$rarch/readline.so" "readline.so_"
   }

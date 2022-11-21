@@ -1,8 +1,8 @@
 diff --git a/test/mkmf/base.rb b/test/mkmf/base.rb
-index ec42bca100..632cda549d 100644
+index ec42bca100..b0702aeb9c 100644
 --- a/test/mkmf/base.rb
 +++ b/test/mkmf/base.rb
-@@ -1,24 +1,13 @@
+@@ -1,24 +1,16 @@
  # frozen_string_literal: false
 -$extmk = true
 +
@@ -13,9 +13,11 @@ index ec42bca100..632cda549d 100644
 -    RbConfig.fire_update!('CC_WRAPPER', $'.strip)
 -    break
 -  end
--end
 +
-+require 'devkit'
++begin
++  require 'devkit'
++rescue LoadError
+ end
  
  require 'test/unit'
  require 'mkmf'

@@ -55,25 +55,6 @@ index 1b70eac9eb..e8900c1ed8 100644
      assert_equal "--no-document",      arguments.shift
      assert_equal "--previous-version", arguments.shift
      assert_equal Gem::VERSION,         arguments.shift
-diff --git a/test/rubygems/test_gem_ext_cargo_builder.rb b/test/rubygems/test_gem_ext_cargo_builder.rb
-index c6bbab2cb3..b70aaf23b4 100644
---- a/test/rubygems/test_gem_ext_cargo_builder.rb
-+++ b/test/rubygems/test_gem_ext_cargo_builder.rb
-@@ -3,6 +3,14 @@
- require_relative "helper"
- require "rubygems/ext"
- 
-+if RUBY_PLATFORM.include? 'mingw'
-+  begin
-+    require 'devkit'
-+  rescue LoadError
-+    raise "Cannot load devkit - test_gem_ext_cargo_builder.rb"
-+  end
-+end
-+
- class TestGemExtCargoBuilder < Gem::TestCase
-   def setup
-     super
 diff --git a/test/rubygems/test_require.rb b/test/rubygems/test_require.rb
 index 222bdcfb28..433be477e6 100644
 --- a/test/rubygems/test_require.rb

@@ -1,3 +1,4 @@
+For mswin only
 diff --git a/spec/ruby/optional/capi/rbasic_spec.rb b/spec/ruby/optional/capi/rbasic_spec.rb
 index 6300680d99..577f2060da 100644
 --- a/spec/ruby/optional/capi/rbasic_spec.rb

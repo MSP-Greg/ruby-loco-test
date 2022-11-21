@@ -54,8 +54,6 @@ jobs:
       - name: test
         timeout-minutes: 70
         run:  ./2_0_test.ps1 mingw
-        env:
-          APPVEYOR: 'True'
 
       - name: CLI Check Bash
         shell: bash

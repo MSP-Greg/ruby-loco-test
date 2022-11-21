@@ -15,7 +15,6 @@ jobs:
       fail-fast: false
     runs-on: windows-${{ matrix.vs }}
     env:
-      APPVEYOR: 'True'
       RL_DIR: ruby-mswin
 
     steps:

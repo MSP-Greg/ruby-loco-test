@@ -28,12 +28,12 @@ Set-Variables
 Set-Variables-Local
 $env:Path = "$ruby_path;$d_repo/git/cmd;$env:Path;$d_msys2/usr/bin;$d_mingw;"
 
-$files = "C:/Windows/System32/libcrypto-1_1-x64.dll",
-         "C:/Windows/System32/libssl-1_1-x64.dll"
+$files = 'C:/Windows/System32/libcrypto-1_1-x64.dll',
+         'C:/Windows/System32/libssl-1_1-x64.dll'
 
 Files-Hide $files
 
-Apply-Patches "mswin_patches"
+Run-Patches @('mswin_patches')
 
 Create-Folders
 
@@ -56,15 +56,12 @@ Time-Log "configure"
 Remove-Read-Only $d_ruby
 Remove-Read-Only $d_build
 
-Run "nmake incs" { iex "nmake incs" }
+Run "nmake incs" { nmake incs }
 Time-Log "make incs"
-
-Run "nmake extract-extlibs" { iex "nmake extract-extlibs" }
-Time-Log "nmake extract-extlibs"
 
 $env:Path = "$d_vcpkg_install\bin;$env:Path"
 
-Run "nmake" { iex "nmake" }
+Run "nmake" { nmake }
 Time-Log "nmake"
 
 Files-Unhide $files

@@ -51,30 +51,6 @@ module CopyBashScripts
         File.write fn, windows_script, mode: 'wb:UTF-8'
       end
     end
-
-    def fix_rbs_debug_ext
-      debug_gem = Dir.glob("#{Gem.default_dir}/gems/debug-*").first
-      debug_name = File.basename debug_gem
-      unless File.exist? "#{debug_gem}/lib/debug/debug.so"
-        ext_path = "#{Gem.default_dir}/extensions/#{RUBY_PLATFORM.tr '_', '-'}/" \
-          "#{RbConfig::CONFIG['ruby_version']}/#{debug_name}"
-        if File.exist? "#{ext_path}/debug/debug.so"
-          FileUtils.cp "#{ext_path}/debug/debug.so", "#{debug_gem}/lib/debug/debug.so"
-        end
-      end
-
-      rbs_gem = Dir.glob("#{Gem.default_dir}/gems/rbs-*").first
-      rbs_name = File.basename rbs_gem
-      unless File.exist? "#{rbs_gem}/lib/rbs_extension.so"
-        ext_path = "#{Gem.default_dir}/extensions/#{RUBY_PLATFORM.tr '_', '-'}/" \
-          "#{RbConfig::CONFIG['ruby_version']}/#{rbs_name}"
-        if File.exist? "#{ext_path}/rbs_extension.so"
-          FileUtils.cp "#{ext_path}/rbs_extension.so", "#{rbs_gem}/lib/rbs_extension.so"
-        end
-      end
-    end
-
   end
 end
 CopyBashScripts.run
-CopyBashScripts.fix_rbs_debug_ext

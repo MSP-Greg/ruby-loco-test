@@ -267,9 +267,7 @@ cd $PSScriptRoot
 Set-Variables
 
 # apply patches for testing
-Apply-Patches "patches_basic_boot"
-Apply-Patches "patches_spec"
-Apply-Patches "patches_test"
+Run-Patches @('patches_basic_boot', 'patches_spec', 'patches_test')
 
 $ruby_exe  = "$d_install/bin/ruby.exe"
 $abi       = &$ruby_exe -e "print RbConfig::CONFIG['ruby_version']"
@@ -303,6 +301,7 @@ echo "irb  --version: $(irb --version)"  ; $exit_code += [int](0 + $LastExitCode
 echo "racc --version: $(racc --version)" ; $exit_code += [int](0 + $LastExitCode)
 echo "rake --version: $(rake --version)" ; $exit_code += [int](0 + $LastExitCode)
 echo "rbs  --version: $(rbs --version)"  ; $exit_code += [int](0 + $LastExitCode)
+echo "rdbg --version: $(rdbg --version)" ; $exit_code += [int](0 + $LastExitCode)
 echo "rdoc --version: $(rdoc --version)" ; $exit_code += [int](0 + $LastExitCode)
 if ($build_sys -ne 'mswin') {
   echo "ridk   version:"

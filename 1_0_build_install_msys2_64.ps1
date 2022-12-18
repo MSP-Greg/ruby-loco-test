@@ -114,7 +114,15 @@ function Set-Env {
 #——————————————————————————————————————————————————————————————————— start build
 cd $PSScriptRoot
 
-. ./0_common.ps1 $args
+if ($args.length -eq 1) {
+  Switch ($args[0]) {
+    'ucrt'  { $temp = 'ucrt'  }
+    'mingw' { $temp = 'mingw' }
+    default { $temp = 'ucrt'  }
+  }
+} else { $temp = 'ucrt' }
+
+. ./0_common.ps1 $temp
 Set-Variables
 Set-Variables-Local
 Set-Env
@@ -131,7 +139,7 @@ $files = "$d_msys2$env:MINGW_PREFIX/lib/libz.dll.a",
 
 Files-Hide $files
 
-Apply-Patches "msys2_patches"
+Run-Patches @('msys2_patches')
 
 Create-Folders
 
@@ -153,7 +161,7 @@ Run "sh -c ./autogen.sh" { sh -c "./autogen.sh" }
 cd $d_build
 Time-Log "start"
 
-$config_args = "--build=$chost --host=$chost --target=$chost --with-out-ext=pty,syslog"
+$config_args = "--build=$chost --host=$chost --target=$chost"
 Run "sh -c `"../ruby/configure --disable-install-doc --prefix=$d_install $config_args`"" {
   sh -c "../ruby/configure --disable-install-doc --prefix=$d_install $config_args"
 }

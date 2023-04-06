@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - '*'
+  schedule:
+    - cron: '50 1,8,15 * * *'
   workflow_dispatch:
 
 jobs:
@@ -36,6 +38,17 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: mswin
+
+      - name: Install/Update Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable-x86_64-pc-windows-msvc
+          components: rustfmt
+
+      - name: Configure bindgen
+        run: |
+          echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=$((gcm clang).source -replace "bin\clang.exe","include")" >> $env:GITHUB_ENV
 
       - name: Cache - .downloaded-cache
         uses: actions/cache@v3

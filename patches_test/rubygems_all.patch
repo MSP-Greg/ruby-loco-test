@@ -1,17 +1,8 @@
-diff --git a/test/rubygems/test_gem.rb b/test/rubygems/test_gem.rb
-index ea8aebb785..d05258b286 100644
---- a/test/rubygems/test_gem.rb
-+++ b/test/rubygems/test_gem.rb
-@@ -991,7 +991,7 @@ def test_self_platforms
-   end
- 
-   def test_self_prefix
--    assert_equal PROJECT_DIR, Gem.prefix
-+    assert_nil Gem.prefix
-   end
- 
-   def test_self_prefix_libdir
-@@ -2134,6 +2134,8 @@ def with_local_bundler_at(path)
+diff --git a/test/rubygems/bundler_test_gem.rb b/test/rubygems/bundler_test_gem.rb
+index 3cd6e7acc5..886b7cac65 100644
+--- a/test/rubygems/bundler_test_gem.rb
++++ b/test/rubygems/bundler_test_gem.rb
+@@ -409,6 +409,8 @@ def with_local_bundler_at(path)
  
      # If bundler gemspec exists, pretend it's installed
      bundler_gemspec = File.expand_path("../../bundler/bundler.gemspec", __dir__)
@@ -20,28 +11,41 @@ index ea8aebb785..d05258b286 100644
      if File.exist?(bundler_gemspec)
        target_gemspec_location = "#{path}/specifications/bundler-#{Bundler::VERSION}.gemspec"
  
+diff --git a/test/rubygems/test_gem.rb b/test/rubygems/test_gem.rb
+index 3efc2ddb69..d56503fd18 100644
+--- a/test/rubygems/test_gem.rb
++++ b/test/rubygems/test_gem.rb
+@@ -946,7 +946,7 @@ def test_self_platforms
+   end
+ 
+   def test_self_prefix
+-    assert_equal PROJECT_DIR, Gem.prefix
++    assert_nil Gem.prefix
+   end
+ 
+   def test_self_prefix_libdir
 diff --git a/test/rubygems/test_gem_commands_environment_command.rb b/test/rubygems/test_gem_commands_environment_command.rb
-index 91ed774cb6..0c56c76d64 100644
+index f527574c07..3d39f091f3 100644
 --- a/test/rubygems/test_gem_commands_environment_command.rb
 +++ b/test/rubygems/test_gem_commands_environment_command.rb
-@@ -27,7 +27,11 @@ def test_execute
-                  @ui.output
-     assert_match %r{USER INSTALLATION DIRECTORY: #{Regexp.escape Gem.user_dir}},
-                  @ui.output
--    assert_match %r{RUBYGEMS PREFIX: }, @ui.output
+@@ -29,7 +29,11 @@ def test_execute
+                  @ui.output)
+     assert_match(/USER INSTALLATION DIRECTORY: #{Regexp.escape Gem.user_dir}/,
+                  @ui.output)
+-    assert_match(/RUBYGEMS PREFIX: /, @ui.output)
 +    if Gem.prefix.nil?
-+      refute_match %r{RUBYGEMS PREFIX: }, @ui.output
++      refute_match(/RUBYGEMS PREFIX: /, @ui.output)
 +    else
-+      assert_match %r{RUBYGEMS PREFIX: }, @ui.output
++      assert_match(/RUBYGEMS PREFIX: /, @ui.output)
 +    end
-     assert_match %r{RUBY EXECUTABLE:.*#{RbConfig::CONFIG['ruby_install_name']}},
-                  @ui.output
-     assert_match %r{GIT EXECUTABLE: #{@cmd.send(:git_path)}}, @ui.output
+     assert_match(/RUBY EXECUTABLE:.*#{RbConfig::CONFIG['ruby_install_name']}/,
+                  @ui.output)
+     assert_match(/GIT EXECUTABLE: #{@cmd.send(:git_path)}/, @ui.output)
 diff --git a/test/rubygems/test_gem_commands_update_command.rb b/test/rubygems/test_gem_commands_update_command.rb
-index 1b70eac9eb..e8900c1ed8 100644
+index 02dd57f660..4fed0a99f0 100644
 --- a/test/rubygems/test_gem_commands_update_command.rb
 +++ b/test/rubygems/test_gem_commands_update_command.rb
-@@ -730,8 +730,11 @@ def test_update_rubygems_arguments
+@@ -731,8 +731,11 @@ def test_update_rubygems_arguments
  
      arguments = @cmd.update_rubygems_arguments
  
@@ -55,11 +59,24 @@ index 1b70eac9eb..e8900c1ed8 100644
      assert_equal "--no-document",      arguments.shift
      assert_equal "--previous-version", arguments.shift
      assert_equal Gem::VERSION,         arguments.shift
+diff --git a/test/rubygems/test_gem_ext_builder.rb b/test/rubygems/test_gem_ext_builder.rb
+index 03d40fa400..5152dbf3df 100644
+--- a/test/rubygems/test_gem_ext_builder.rb
++++ b/test/rubygems/test_gem_ext_builder.rb
+@@ -250,7 +250,7 @@ def test_build_extensions_extconf_bad
+     gem_make_out = File.join @spec.extension_dir, "gem_make.out"
+     cmd_make_out = File.read(gem_make_out)
+ 
+-    assert_match %r{#{Regexp.escape Gem.ruby} .* extconf\.rb}, cmd_make_out
++    assert_match %r{/bin/ruby.exe( .*)? extconf\.rb}, cmd_make_out
+     assert_match(/: No such file/, cmd_make_out)
+ 
+     assert_path_not_exist @spec.gem_build_complete_path
 diff --git a/test/rubygems/test_require.rb b/test/rubygems/test_require.rb
-index dff945f625..e8d24d9980 100644
+index 95bae66e21..bf894071df 100644
 --- a/test/rubygems/test_require.rb
 +++ b/test/rubygems/test_require.rb
-@@ -451,7 +451,7 @@ def test_realworld_default_gem
+@@ -450,7 +450,7 @@ def test_realworld_default_gem
        require "json"
        puts Gem.loaded_specs["json"]
      RUBY
@@ -68,7 +85,7 @@ index dff945f625..e8d24d9980 100644
      assert $?.success?
      refute_empty output
    end
-@@ -471,7 +471,7 @@ def test_realworld_upgraded_default_gem
+@@ -470,7 +470,7 @@ def test_realworld_upgraded_default_gem
      RUBY
      File.write(path, code)
  

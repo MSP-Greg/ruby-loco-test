@@ -33,30 +33,23 @@ jobs:
         timeout-minutes: 8
         uses: ruby/setup-ruby-pkgs@v1
         with:
-          ruby-version: 3.2
+          ruby-version: mingw
           mingw: clang-15 rust
 
       - name: Configure bindgen
-        shell: bash
         run: |
-          : Configure bindgen for msys2
-
-          msys_root=""
-
-          if [ "$MSYSTEM" = "MINGW64" ]; then
-            msys_root="c:/msys64/mingw64"
-          elif [ "$MSYSTEM" = "UCRT64" ]; then
-            msys_root="c:/msys64/ucrt64"
-          else
-            echo "Unknown MSYSTEM: $MSYSTEM, cannot configure bindgen"
+          # Configure bindgen for msys2
+          if ($env:MSYSTEM -eq "MINGW64") {
+            $msys_root = "c:/msys64/mingw64"
+          } elseif ($env:MSYSTEM -eq "UCRT64") {
+            $msys_root = "c:/msys64/ucrt64"
+          } else {
+            echo "Unknown MSYSTEM: $env:MSYSTEM, cannot configure bindgen"
             exit 1
-          fi
-
+          }
           # We can't use llvm-16 just yet due to backwards compatibility issues, so we have to workaround for now
-          echo MSYS_ROOT="$msys_root" >> $GITHUB_ENV
-          echo LIBCLANG_PATH="$msys_root/opt/llvm-15/bin" >> $GITHUB_ENV
-
-          echo "::info::Set LIBCLANG_PATH to $LIBCLANG_PATH"
+          echo "MSYS_ROOT=$msys_root" >> $env:GITHUB_ENV
+          echo "LIBCLANG_PATH=$msys_root/opt/llvm-15/bin" >> $env:GITHUB_ENV
 
       - name: Cache - .downloaded-cache
         uses: actions/cache@v3

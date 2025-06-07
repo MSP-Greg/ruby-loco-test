@@ -3,8 +3,8 @@ on:
   push:
     branches:
       - '*'
-#  schedule:
-#    - cron: '50 1,8,15 * * *'
+  schedule:
+    - cron: '35 1,8,15 * * *'
   workflow_dispatch:
 
 jobs:
@@ -15,8 +15,7 @@ jobs:
       fail-fast: false
     runs-on: windows-${{ matrix.vs }}
     env:
-      APPVEYOR: 'True'
-      RL_DIR: ruby-mswin
+      PRE: ruby-mswin
 
     steps:
       - name: git config
@@ -25,14 +24,7 @@ jobs:
           git config --system core.eol lf
 
       - name: repo checkout
-        uses: actions/checkout@v3
-
-      - name: get ruby and rubyinstaller2
-        timeout-minutes: 5
-        run: |
-          $gh = 'https://github.com'
-          git clone -q --depth=1 --no-tags --branch=master  $gh/oneclick/rubyinstaller2.git ./rubyinstaller2
-          git clone -q --depth=1 --no-tags --branch=master  $gh/ruby/ruby.git               ./ruby
+        uses: actions/checkout@v4
 
       - name: load ruby
         timeout-minutes: 12
@@ -40,8 +32,31 @@ jobs:
         with:
           ruby-version: mswin
 
+      # cert file is created with RubyInstaller2
+      - name: Get Ruby and RubyInstaller2 repos
+        timeout-minutes: 5
+        run: |
+          $gh = 'https://github.com'
+          git clone -q --depth=1 --no-tags --branch=master  $gh/oneclick/rubyinstaller2.git ./rubyinstaller2
+          git clone -q --depth=1 --no-tags --branch=master  $gh/ruby/ruby.git               ./ruby
+          cd ruby
+          ruby ../git_log_utc.rb
+
+      - name: Install/Update Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable-x86_64-pc-windows-msvc
+          components: rustfmt
+
+      - name: Configure bindgen
+        run: |
+          echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=$((gcm clang).source -replace "bin\clang.exe","include")" >> $env:GITHUB_ENV
+          echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")"
+          echo "BINDGEN_EXTRA_CLANG_ARGS=$((gcm clang).source -replace "bin\clang.exe","include")"
+
       - name: Cache - .downloaded-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .downloaded-cache
           key: dl-cache-win-mswin-${{ hashFiles('ruby/gems/bundled_gems') }}
@@ -66,11 +81,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          ruby_path: ./${{ env.RL_DIR }}
+          ruby_path: ./${{ env.PRE }}
 
       - name: save log artifact
         if: success() || failure()
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.TEST_LOGS }}
           path: ./logs

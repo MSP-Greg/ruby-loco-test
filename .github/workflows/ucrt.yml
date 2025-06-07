@@ -3,8 +3,8 @@ on:
   push:
     branches:
       - '*'
-#  schedule:
-#    - cron: '55 1,8,15 * * *'
+  schedule:
+    - cron: '55 1,8,15 * * *'
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,8 @@ jobs:
       fail-fast: false
     runs-on: windows-2022
     env:
-      RL_DIR: ruby-ucrt
+      PRE: ruby-ucrt
+      RUST_TC: stable-x86_64-pc-windows-gnu
 
     steps:
       - name: git config
@@ -22,26 +23,48 @@ jobs:
           git config --system core.eol lf
 
       - name: Checkout ruby-loco
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: get ruby and rubyinstaller2
+      - name: Set up Ruby & MSYS2
+        timeout-minutes: 8
+        uses: ruby/setup-ruby-pkgs@v1
+        with:
+          ruby-version: ucrt
+          mingw: clang
+
+      - name: Get Ruby and RubyInstaller2 repos
         timeout-minutes: 5
         run: |
           $gh = 'https://github.com'
           git clone -q --depth=1 --no-tags --branch=master  $gh/oneclick/rubyinstaller2.git ./rubyinstaller2
           git clone -q --depth=1 --no-tags --branch=master  $gh/ruby/ruby.git               ./ruby
+          cd ruby
+          ruby ../git_log_utc.rb
 
-      - name: Set up Ruby & MSYS2
-        timeout-minutes: 8
-        uses: ruby/setup-ruby@v1
+      - name: Install/Update Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          ruby-version: 3.1
+          toolchain: ${{ env.RUST_TC }}
 
-      - name: install rust
-        run: pacman -S --noconfirm --noprogressbar --needed mingw-w64-ucrt-x86_64-rust
+      - name: Configure bindgen
+        run: |
+          # Configure bindgen for msys2
+          $msys_root = $env:GHCUP_MSYS2.replace('\', '/')
+          if ($env:MSYSTEM -eq 'MINGW64') {
+            $msys_root += '/mingw64'
+          } elseif ($env:MSYSTEM -eq 'UCRT64') {
+            $msys_root += '/ucrt64'
+          } else {
+            echo "Unknown MSYSTEM: $env:MSYSTEM, cannot configure bindgen"
+            exit 1
+          }
+          # We can't use llvm-16 just yet due to backwards compatibility issues, so we have to workaround for now
+          echo "MSYS_ROOT=$msys_root" >> $env:GITHUB_ENV
+          echo "LIBCLANG_PATH=$msys_root/opt/llvm-15/bin" >> $env:GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=`"--target=$env:RUST_TC --sysroot=$msys_root`"" >> $env:GITHUB_ENV
 
       - name: Cache - .downloaded-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .downloaded-cache
           key: dl-cache-win-ucrt-${{ hashFiles('ruby/gems/bundled_gems') }}
@@ -54,8 +77,6 @@ jobs:
       - name: test
         timeout-minutes: 70
         run:  ./2_0_test.ps1 ucrt
-        env:
-          APPVEYOR: 'True'
 
       - name: CLI Check Bash
         shell: bash
@@ -67,11 +88,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          ruby_path: ./${{ env.RL_DIR }}
+          ruby_path: ./${{ env.PRE }}
 
       - name: save log artifact
         if: success() || failure()
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.TEST_LOGS }}
           path: ./logs

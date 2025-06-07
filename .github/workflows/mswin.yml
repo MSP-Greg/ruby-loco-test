@@ -28,6 +28,9 @@ jobs:
         run: |
           Invoke-WebRequest https://aka.ms/vs/17/release/vs_Enterprise.exe -OutFile C:/vs_Enterprise.exe
           C:/vs_Enterprise.exe updateall --quiet --includeOptional --wait --clean
+
+      - name: Run vs_installer.exe
+        run: |
           &"C:/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe" updateall --quiet
 
       - name: VS Where

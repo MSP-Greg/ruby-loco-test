@@ -1,0 +1,10 @@
+diff --git a/test/json/test_helper.rb b/test/json/test_helper.rb
+index d849e28b9b..7469d8250d 100644
+--- a/test/json/test_helper.rb
++++ b/test/json/test_helper.rb
+@@ -1,4 +1,4 @@
+-$LOAD_PATH.unshift(File.expand_path('../../../ext', __FILE__), File.expand_path('../../../lib', __FILE__))
++# $LOAD_PATH.unshift(File.expand_path('../../../ext', __FILE__), File.expand_path('../../../lib', __FILE__))
+ 
+ require 'json'
+ require 'test/unit'

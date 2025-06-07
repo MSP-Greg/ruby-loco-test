@@ -114,7 +114,15 @@ function Set-Env {
 #——————————————————————————————————————————————————————————————————— start build
 cd $PSScriptRoot
 
-. ./0_common.ps1 $args
+if ($args.length -eq 1) {
+  Switch ($args[0]) {
+    'ucrt'  { $temp = 'ucrt'  }
+    'mingw' { $temp = 'mingw' }
+    default { $temp = 'ucrt'  }
+  }
+} else { $temp = 'ucrt' }
+
+. ./0_common.ps1 $temp
 Set-Variables
 Set-Variables-Local
 Set-Env
@@ -131,7 +139,8 @@ $files = "$d_msys2$env:MINGW_PREFIX/lib/libz.dll.a",
 
 Files-Hide $files
 
-Apply-Patches "msys2_patches"
+Run-Patches @('rubyinstaller2', 'patches_ri2')
+Run-Patches @('ruby', 'patches_install_all', 'patches_install_msys2')
 
 Create-Folders
 
@@ -139,6 +148,9 @@ cd $d_repo
 ruby 1_1_pre_build.rb 64
 
 cd $d_ruby
+
+(Get-Content gems/bundled_gems -raw) -replace '(?m)^syslog.+\n', '' | Set-Content gems/bundled_gems -NoNewline
+
 # set time stamp for reproducible build
 $ts = $(git log -1 --format=%at).Trim()
 if ($ts -match '\A\d+\z' -and $ts -gt "1540000000") {
@@ -148,15 +160,20 @@ if ($ts -match '\A\d+\z' -and $ts -gt "1540000000") {
 
 # Run "sh -c `"autoreconf -fi`"" { sh -c "autoreconf -fi" }
 
-Run "sh -c ./autogen.sh" { sh -c "./autogen.sh" }
+Run "sh -c ./autogen.sh" { sh -c "./autogen.sh"sh -c "./autogen.sh"; Get-Content -Path "./configure" | Select-Object -First 4 }
 
 cd $d_build
 Time-Log "start"
 
-$config_args = "--build=$chost --host=$chost --target=$chost --with-out-ext=pty,syslog"
+$config_args = "--build=$chost --host=$chost --target=$chost"
+
+# disable since Ruby adds Actions collapsible sections, can't nest them
+$actual_github_actions = $is_actions
+$is_actions = $false
 Run "sh -c `"../ruby/configure --disable-install-doc --prefix=$d_install $config_args`"" {
   sh -c "../ruby/configure --disable-install-doc --prefix=$d_install $config_args"
 }
+$is_actions = $actual_github_actions
 Time-Log "configure"
 
 # below sets some directories to normal in case they're set to read-only
@@ -173,6 +190,7 @@ Files-Unhide $files
 
 Run "make install-nodoc" {
   make install-nodoc
+  Check-Exit "'make install-nodoc' failure"
   cd $d_repo
   ruby 1_2_post_install.rb
   Check-Exit "'ruby 1_2_post_install.rb' failure"
@@ -192,7 +210,13 @@ Run "make install-nodoc" {
   $env:Path = "$d_install/bin;$d_mingw;$d_repo/git/cmd;$d_msys2/usr/bin;$base_path"
   ruby 1_3_post_install.rb
   Check-Exit "'ruby 1_3_post_install.rb' failure"
-  
+
+  # fix up RbConfig - CONFIG["INSTALL"], CONFIG["MAKEDIRS"], CONFIG["MKDIR_P"]
+  $rubyPath = ruby.exe -e 'print "#{RbConfig::TOPDIR}/lib/ruby/#{RbConfig::CONFIG["ruby_version"]}/#{RUBY_PLATFORM}"'
+  $rbconfig = "$rubyPath/rbconfig.rb"
+  (Get-Content $rbconfig) | ForEach-Object { $_ -replace '\/[cd]\/ruby-[a-z]+\/msys64', '' } | Out-File -FilePath $rbconfig -Encoding UTF8
+  (Get-Content $rbconfig -raw).Replace("`r", "") | Out-File -FilePath $rbconfig -Encoding UTF8 -NoNewline
+
   ruby 1_4_post_install_bin_files.rb
   Check-Exit "'ruby 1_4_post_install_bin_files.rb' failure"
 }

@@ -1,10 +1,8 @@
-Patch by MSP-Greg
-Attempts to fix issues when run on 'busy' CI systems
 diff --git a/bootstraptest/runner.rb b/bootstraptest/runner.rb
-index f9b3e919b8..a5111614c1 100755
+index 8d30d3743c..a6ea086f83 100755
 --- a/bootstraptest/runner.rb
 +++ b/bootstraptest/runner.rb
-@@ -688,9 +688,15 @@ def assert_finish(timeout_seconds, testsrc, message = '')
+@@ -789,9 +789,15 @@ def assert_finish(timeout_seconds, testsrc, message = '')
          end
          if io.respond_to?(:read_nonblock)
            if IO.select([io], nil, nil, diff)
@@ -22,7 +20,7 @@ index f9b3e919b8..a5111614c1 100755
              end while true
            end
 diff --git a/bootstraptest/test_io.rb b/bootstraptest/test_io.rb
-index 666e5a011b..7efb535ec4 100644
+index 4e5d6d59c9..547dbc2305 100644
 --- a/bootstraptest/test_io.rb
 +++ b/bootstraptest/test_io.rb
 @@ -1,5 +1,5 @@
@@ -33,10 +31,10 @@ index 666e5a011b..7efb535ec4 100644
    t1 = Thread.new { r.sysread(1) }
    t2 = Thread.new { r.sysread(1) }
 diff --git a/bootstraptest/test_thread.rb b/bootstraptest/test_thread.rb
-index 5361828403..32ba739165 100644
+index 4040b68a27..87d09d5f64 100644
 --- a/bootstraptest/test_thread.rb
 +++ b/bootstraptest/test_thread.rb
-@@ -335,7 +335,7 @@ def m
+@@ -347,7 +347,7 @@ def m
  
  assert_normal_exit %q{
    Thread.new("foo", &Object.method(:class_eval)).join

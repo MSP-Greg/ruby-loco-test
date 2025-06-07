@@ -1,0 +1,42 @@
+diff --git a/test/irb/test_command.rb b/test/irb/test_command.rb
+index ec2d1f92df..fb8ca31b8a 100644
+--- a/test/irb/test_command.rb
++++ b/test/irb/test_command.rb
+@@ -817,6 +817,10 @@ def test_show_doc_without_rdoc
+   end
+ 
+   class EditTest < CommandTestCase
++
++    # used for running tests from install folder
++    LIB_PATH = RbConfig::CONFIG['rubylibdir']
++
+     def setup
+       @original_visual = ENV["VISUAL"]
+       @original_editor = ENV["EDITOR"]
+@@ -876,7 +880,7 @@ def test_edit_with_constant
+       )
+ 
+       assert_empty err
+-      assert_match(/path: .*\/lib\/irb\.rb/, out)
++      assert_include out, "path: #{LIB_PATH}/irb.rb"
+       assert_match("command: ': code'", out)
+     end
+ 
+@@ -886,7 +890,7 @@ def test_edit_with_class_method
+       )
+ 
+       assert_empty err
+-      assert_match(/path: .*\/lib\/irb\.rb/, out)
++      assert_include out, "path: #{LIB_PATH}/irb.rb"
+       assert_match("command: ': code'", out)
+     end
+ 
+@@ -896,7 +900,7 @@ def test_edit_with_instance_method
+       )
+ 
+       assert_empty err
+-      assert_match(/path: .*\/lib\/irb\.rb/, out)
++      assert_include out, "path: #{LIB_PATH}/irb.rb"
+       assert_match("command: ': code'", out)
+     end
+ 

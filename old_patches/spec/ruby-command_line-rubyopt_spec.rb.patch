@@ -1,0 +1,19 @@
+diff --git a/spec/ruby/command_line/rubyopt_spec.rb b/spec/ruby/command_line/rubyopt_spec.rb
+index 18a5959b18..734db8d519 100644
+--- a/spec/ruby/command_line/rubyopt_spec.rb
++++ b/spec/ruby/command_line/rubyopt_spec.rb
+@@ -25,12 +25,12 @@
+   guard -> { not CROSS_COMPILING } do
+     it "prints the version number for '-v'" do
+       ENV["RUBYOPT"] = '-v'
+-      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION.sub("+PRISM ", "")
++      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
+     end
+ 
+     it "ignores whitespace around the option" do
+       ENV["RUBYOPT"] = ' -v '
+-      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION.sub("+PRISM ", "")
++      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
+     end
+   end
+ 

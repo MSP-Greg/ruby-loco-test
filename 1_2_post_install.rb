@@ -41,7 +41,7 @@ module PostInstall2
     # Copies correct dll files from MSYS2 location to package dir.
     def copy_dll_files
       pkg_pre = ENV['MINGW_PACKAGE_PREFIX']
-      pkgs = 'gcc-libs libffi libyaml openssl readline zlib'
+      pkgs = 'gcc-libs gmp libffi libyaml openssl readline zlib'
       dll_files, lib_files = find_dlls pkgs, pkg_pre
 
       # get mingw bin path for arch
@@ -67,8 +67,8 @@ module PostInstall2
       dll_dirs.each { |d|
         src = File.join D_MINGW, "lib", d
         if Dir.exist?(src)
-          dest = File.join D_INSTALL, "lib", d
-          Dir.mkdir dest unless Dir.exist? dest
+          dest = File.join D_INSTALL, 'bin', 'lib', d
+          FileUtils.mkdir_p dest unless Dir.exist? dest
           `xcopy /s /q #{src.gsub('/', '\\')} #{dest.gsub('/', '\\')}`
           puts "#{COL_SPACE}Copy dir #{d}"
         else

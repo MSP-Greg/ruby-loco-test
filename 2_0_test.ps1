@@ -5,9 +5,6 @@ time, so if a test freezes, it can be stopped.
 
 $exit_code = 0
 
-$enc_input  = [Console]::InputEncoding
-$enc_output = [Console]::OutputEncoding
-
 #————————————————————————————————————————————————————————————————————— Kill-Proc
 # Kills a process by first looping thru child & grandchild processes and
 # stopping them, then stops passed process
@@ -66,11 +63,6 @@ function Run-Proc {
   $start = Get-Date
   $status = ''
 
-  if ($is_actions) {
-    [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding('IBM437')
-    [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding('IBM437')
-  }
-
   $proc = Start-Process $exe -ArgumentList $e_args `
     -RedirectStandardOutput $d_logs/$StdOut `
     -RedirectStandardError  $d_logs/$StdErr `
@@ -88,11 +80,6 @@ function Run-Proc {
   }
   $diff = New-TimeSpan -Start $start -End $(Get-Date)
   $msg = "Test Time  {0,8:n1}" -f @($diff.TotalSeconds)
-
-  if ($is_actions) {
-    [Console]::OutputEncoding = $enc_output
-    [Console]::InputEncoding  = $enc_input
-  }
 
   Write-Host $msg -NoNewLine
   if ($proc.ExitCode -eq 0) {
@@ -127,9 +114,6 @@ function Finish {
   }
 
   $env:PATH = "$d_install/bin;$d_repo/git/cmd;$base_path"
-
-  # AppVeyor seems to be needed for proper dash encoding in 2_1_test_script.rb
-  [Console]::OutputEncoding = New-Object -typename System.Text.UTF8Encoding
 
   # used in 2_1_test_script.rb
   $env:PS_ENC = [Console]::OutputEncoding.WebName.toUpper()
@@ -200,10 +184,10 @@ function Test-All {
   $env:TEST_SSL = '1'
 
   if ($build_sys -ne 'mswin') {
-    $args = "--disable=gems -rdevkit ./runner.rb -X ./excludes -n !/memory_leak/ -j $jobs" + `
+    $args = "--disable=gems -rdevkit ./runner.rb -X ./.excludes -n !/memory_leak/ -j $jobs" + `
       " -v --show-skip --retry --job-status=normal --timeout-scale=1.5"
   } else {
-    $args = "--disable=gems ./runner.rb -X ./excludes -n !/memory_leak/ -j $jobs" + `
+    $args = "--disable=gems ./runner.rb -X ./.excludes -n !/memory_leak/ -j $jobs" + `
       " -v --show-skip --retry --job-status=normal --timeout-scale=1.5"
   }
 
@@ -219,7 +203,7 @@ function Test-All {
     -StdErr "test_all_err.log" `
     -Title  "test-all" `
     -Dir    "$test_dir" `
-    -TimeLimit 3000
+    -TimeLimit 1000
 
   # comment out below to allow full testing of Appveyor artifact
   # Remove-Item -Path "$d_install/lib/ruby/$abi/$rarch/-test-" -Recurse
@@ -267,15 +251,13 @@ cd $PSScriptRoot
 Set-Variables
 
 # apply patches for testing
-Apply-Patches "patches_basic_boot"
-Apply-Patches "patches_spec"
-Apply-Patches "patches_test"
+Run-Patches @('ruby', 'patches_basic_boot', 'patches_spec', 'patches_test')
 
 $ruby_exe  = "$d_install/bin/ruby.exe"
 $abi       = &$ruby_exe -e "print RbConfig::CONFIG['ruby_version']"
 $script:time_info = ''
 
-$env:PATH = "$d_install/bin;$no_ruby_path"
+$env:PATH = "$d_install/bin;$base_path"
 
 if ($env:DESTDIR) { Remove-Item env:\DESTDIR }
 if ($env:BUNDLER_VERSION) { Remove-Item env:\BUNDLER_VERSION }
@@ -293,7 +275,7 @@ EchoC $($dash * 92) yel
 ruby -ropenssl -e "puts RUBY_DESCRIPTION, OpenSSL::OPENSSL_LIBRARY_VERSION"
 
 EchoC "$dash_hdr Install `'tz`' gems" yel
-gem install `"timezone:>=1.3.16`" `"tzinfo:>=2.0.4`" `"tzinfo-data:>=1.2022.1`" --no-document --conservative --norc --no-user-install
+gem install "timezone" "tzinfo" "tzinfo-data" --no-document --conservative --norc --no-user-install
 
 # CLI-Test
 EchoC "$dash_hdr CLI Test" yel
@@ -303,17 +285,27 @@ echo "irb  --version: $(irb --version)"  ; $exit_code += [int](0 + $LastExitCode
 echo "racc --version: $(racc --version)" ; $exit_code += [int](0 + $LastExitCode)
 echo "rake --version: $(rake --version)" ; $exit_code += [int](0 + $LastExitCode)
 echo "rbs  --version: $(rbs --version)"  ; $exit_code += [int](0 + $LastExitCode)
+echo "rdbg --version: $(rdbg --version)" ; $exit_code += [int](0 + $LastExitCode)
 echo "rdoc --version: $(rdoc --version)" ; $exit_code += [int](0 + $LastExitCode)
 if ($build_sys -ne 'mswin') {
   echo "ridk   version:"
   ridk version
 }
-
 echo ''
+
+# Encoding
+EchoC "$dash_hdr Encoding" yel
+echo "Encoding.find('external')  : $(ruby -e `"puts Encoding.find('external')`")"
+echo "Encoding.find('filesystem'): $(ruby -e `"puts Encoding.find('filesystem')`")"
+echo "Encoding.find('locale')    : $(ruby -e `"puts Encoding.find('locale')`")"
+echo "Encoding.default_external  : $(ruby -e `"puts Encoding.default_external`")"
+echo ''
+
 EchoC "$dash_hdr Run Tests" yel
 
 BasicTest
 sleep 2
+
 BootStrapTest
 sleep 2
 
@@ -325,8 +317,12 @@ if ($build_sys -ne 'mswin') {
 
 Test-All
 sleep 5
-Test-Reline
-sleep 5
+
+if (Test-Path -Path $d_install/lib/ruby/$abi/reline.rb -PathType Leaf ) {
+  Test-Reline
+  sleep 5
+}
+
 MSpec
 
 if (Test-Path -Path $d_install/lib/ruby/$abi/$rarch/readline.so -PathType Leaf ) {

@@ -4,7 +4,7 @@ RUBY_BIN=$(dirname "$(which ruby)")
 
 PATH=${PATH/$RUBY_BIN:/}
 
-export PATH="${PWD}/${RL_DIR}/bin:${PATH}"
+export PATH="${PWD}/${PRE}/bin:${PATH}"
 
 error=0
 
@@ -32,8 +32,14 @@ printf "rbs  --version: "
 rbs --version
 error=$((error + $?))
 
+printf "rdbg --version: "
+rdbg --version
+error=$((error + $?))
+
 printf "rdoc --version: "
 rdoc --version
 error=$((error + $?))
+
+ruby -v
 
 if [ "$error" != 0 ]; then exit 1; fi

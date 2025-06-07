@@ -1,22 +1,43 @@
-# rubygems tests generate files in test/tmp, including
-# causes errors with parallel testing
 diff --git a/test/ruby/test_ast.rb b/test/ruby/test_ast.rb
-index acf6722bb7..361ea6faee 100644
+index ebef14c14b..f8beaf72a3 100644
 --- a/test/ruby/test_ast.rb
 +++ b/test/ruby/test_ast.rb
-@@ -115,6 +115,7 @@ def validate_not_cared0(node)
+@@ -116,24 +116,26 @@ def validate_not_cared0(node)
    SRCDIR = File.expand_path("../../..", __FILE__)
  
    Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
-+    next if path.include? 'test/tmp/'
++    next if path.start_with? 'test/tmp/'
++
      define_method("test_ranges:#{path}") do
        helper = Helper.new("#{SRCDIR}/#{path}")
        helper.validate_range
-@@ -124,6 +125,7 @@ def validate_not_cared0(node)
-   end
  
-   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
-+    next if path.include? 'test/tmp/'
+       assert_equal([], helper.errors)
++      helper.instance_variable_set(:@ast, nil)
++      helper = nil
+     end
+-  end
+ 
+-  Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
      define_method("test_not_cared:#{path}") do
        helper = Helper.new("#{SRCDIR}/#{path}")
        helper.validate_not_cared
+ 
+       assert_equal([], helper.errors)
++      helper.instance_variable_set(:@ast, nil)
++      helper = nil
+     end
+-  end
+ 
+-  Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
+     define_method("test_all_tokens:#{path}") do
+       node = RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true)
+       tokens = node.all_tokens.sort_by { [_1.last[0], _1.last[1]] }
+@@ -158,6 +160,7 @@ def validate_not_cared0(node)
+           assert_equal(0, beg_pos[1], "#{token_0}. #{token_1}")
+         end
+       end
++      node = nil
+     end
+   end
+ 

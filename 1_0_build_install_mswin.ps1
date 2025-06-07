@@ -1,5 +1,5 @@
 <# Code by MSP-Greg
-Script for building & installing MinGW Ruby for CI
+Script for building & installing MSWIN Ruby for CI
 Assumes a Ruby exe is in path
 Assumes 'Git for Windows' is installed at $env:ProgramFiles\Git
 Assumes '7z             ' is installed at $env:ProgramFiles\7-Zip
@@ -19,6 +19,8 @@ function Set-Variables-Local {
 #——————————————————————————————————————————————————————————————————— start build
 cd $PSScriptRoot
 
+(Get-Content ruby/gems/bundled_gems -raw) -replace '(?m)^syslog.+\n', '' | Set-Content ruby/gems/bundled_gems -NoNewline
+
 $global:build_sys = 'mswin'
 
 . ./0_common.ps1 mswin
@@ -27,13 +29,15 @@ Set-Variables
 
 Set-Variables-Local
 $env:Path = "$ruby_path;$d_repo/git/cmd;$env:Path;$d_msys2/usr/bin;$d_mingw;"
+$env:PKG_CONFIG = "d_vcpkg_install/tools/pkgconf/pkgconf.exe"
 
-$files = "C:/Windows/System32/libcrypto-1_1-x64.dll",
-         "C:/Windows/System32/libssl-1_1-x64.dll"
+$files = 'C:/Windows/System32/libcrypto-1_1-x64.dll',
+         'C:/Windows/System32/libssl-1_1-x64.dll'
 
 Files-Hide $files
 
-Apply-Patches "mswin_patches"
+Run-Patches @('rubyinstaller2', 'patches_ri2')
+Run-Patches @('ruby', 'patches_install_all', 'patches_install_mswin')
 
 Create-Folders
 
@@ -44,27 +48,25 @@ if ($ts -match '\A\d+\z' -and $ts -gt "1540000000") {
   # echo "SOURCE_DATE_EPOCH = $env:SOURCE_DATE_EPOCH"
 }
 
-cd $d_build
-
-Time-Log "start"
-
-$cmd_config = "..\ruby\win32\configure.bat --disable-install-doc --prefix=$d_install --without-ext=+,dbm,gdbm --with-opt-dir=$d_vcpkg_install"
-Run $cmd_config { cmd.exe /c "$cmd_config" }
-Time-Log "configure"
-
 # below sets some directories to normal in case they're set to read-only
 Remove-Read-Only $d_ruby
 Remove-Read-Only $d_build
 
-Run "nmake incs" { iex "nmake incs" }
-Time-Log "make incs"
+cd $d_build
 
-Run "nmake extract-extlibs" { iex "nmake extract-extlibs" }
-Time-Log "nmake extract-extlibs"
+Time-Log "start"
+
+$cmd_config = "..\ruby\win32\configure.bat --disable-install-doc --prefix=$d_install --with-opt-dir=$d_vcpkg_install --with-gmp"
+Run $cmd_config { cmd.exe /c "$cmd_config" }
+Time-Log "configure"
+Run "Makefile" { cat ./Makefile }
+
+Run "nmake incs" { nmake incs }
+Time-Log "make incs"
 
 $env:Path = "$d_vcpkg_install\bin;$env:Path"
 
-Run "nmake" { iex "nmake" }
+Run "nmake" { nmake }
 Time-Log "nmake"
 
 Files-Unhide $files
@@ -79,7 +81,12 @@ Run "nmake 'DESTDIR=' install-nodoc" {
 
   cd $d_install\bin\ruby_builtin_dlls
   echo "installing dll files:               From $d_vcpkg_install/bin"
-  $dlls = @('libcrypto-3-x64', 'libssl-3-x64', 'libffi', 'readline', 'yaml', 'zlib1')
+
+  # Changes here requires changes to mswin/ruby_builtin_dlls.manifest and
+  # mswin/ruby-exe.xml, update version in the below
+  # <assemblyIdentity type="win32" name="ruby_builtin_dlls" version="1.0.0.4"/>
+  $dlls = @('gmp-10', 'gmpxx-4', 'libcrypto-3-x64', 'libssl-3-x64', 'ffi-8', 'readline', 'yaml', 'zlib1')
+
   foreach ($dll in $dlls) {
     Copy-Item $d_vcpkg_install/bin/$dll.dll
     echo "                                    $dll.dll"
@@ -87,8 +94,14 @@ Run "nmake 'DESTDIR=' install-nodoc" {
 
   Copy-Item $d_repo/mswin/ruby_builtin_dlls.manifest
 
+  cd $d_install\bin\lib\ossl-modules
+  Copy-Item $d_vcpkg_install/bin/legacy.dll
+
   cd $d_repo
-  del $d_install\lib\x64-vcruntime140-ruby$ruby_abi-static.lib
+  
+  if (Test-Path -Path $d_install/lib/x64-vcruntime140-ruby$ruby_abi-static.lib -PathType Leaf ) {
+    del $d_install\lib\x64-vcruntime140-ruby$ruby_abi-static.lib
+  }
   # below can't run from built Ruby, as it needs valid cert files
   ruby 1_2_post_install_common.rb run
 }
@@ -105,7 +118,7 @@ Print-Time-Log
 
 # below needs to run from built/installed Ruby
 cd $d_repo
-$env:Path = "$d_install\bin;$no_ruby_path"
+$env:Path = "$d_install\bin;$base_path"
 &"$d_install/bin/ruby.exe" 1_4_post_install_bin_files.rb
 
 if (Test-Path Env:\SOURCE_DATE_EPOCH ) { Remove-Item Env:\SOURCE_DATE_EPOCH }

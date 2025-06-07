@@ -1,0 +1,18 @@
+# load files from install, not src
+diff --git a/test/ruby/test_require_lib.rb b/test/ruby/test_require_lib.rb
+index a88279727e..92f67f453d 100644
+--- a/test/ruby/test_require_lib.rb
++++ b/test/ruby/test_require_lib.rb
+@@ -1,8 +1,11 @@
+ # frozen_string_literal: true
+ require 'test/unit'
++require 'rbconfig'
+ 
+ class TestRequireLib < Test::Unit::TestCase
+-  libdir = __dir__ + '/../../lib'
++  
++  temp = RbConfig::CONFIG['rubylibdir']
++  libdir = Dir.exist?(temp) ? temp : (__dir__ + '/../../lib')
+ 
+   # .rb files at lib
+   scripts = Dir.glob('*.rb', base: libdir).map {|f| f.chomp('.rb')}

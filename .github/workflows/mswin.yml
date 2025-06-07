@@ -28,7 +28,7 @@ jobs:
         run: |
           Invoke-WebRequest https://aka.ms/vs/17/release/vs_Enterprise.exe -OutFile C:/vs_Enterprise.exe
           C:/vs_Enterprise.exe updateall --quiet --includeOptional --wait --clean
-          "C:/Program Files (x86)/Microsoft Visual Studio/Installer/setup.exe"
+          &"C:/Program Files (x86)/Microsoft Visual Studio/Installer/setup.exe"
 
       - name: load ruby
         timeout-minutes: 12

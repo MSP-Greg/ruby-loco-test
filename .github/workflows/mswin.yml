@@ -26,8 +26,8 @@ jobs:
 
       - name: update VS Build Tools
         run: |
-          Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile C:/vs_BuildTools.exe
-          C:/vs_BuildTools.exe --quiet --includeOptional --wait
+          Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile C:/vs_Enterprise.exe
+          C:/vs_Enterprise.exe --quiet --includeOptional --wait
 
       - name: load ruby
         timeout-minutes: 12

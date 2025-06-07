@@ -26,6 +26,11 @@ jobs:
       - name: repo checkout
         uses: actions/checkout@v4
 
+      - name: update VS Build Tools
+        run: |
+          Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile C:/vs_BuildTools.exe
+          C:/vs_BuildTools.exe --quiet
+
       - name: load ruby
         timeout-minutes: 12
         uses: ruby/setup-ruby@v1

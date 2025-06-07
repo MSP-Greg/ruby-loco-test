@@ -9,7 +9,7 @@ jobs:
   mswin:
     strategy:
       matrix:
-        vs: [2022]
+        vs: [2025]
       fail-fast: false
     runs-on: windows-${{ matrix.vs }}
     env:
@@ -20,6 +20,9 @@ jobs:
         run: |
           git config --system core.autocrlf false
           git config --system core.eol lf
+
+      - name: repo checkout
+        uses: actions/checkout@v4
 
       - name: Update VS Build Tools
         run: |

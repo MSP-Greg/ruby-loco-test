@@ -31,7 +31,7 @@ jobs:
 
       - name: Run vs_installer.exe
         run: |
-          &"C:/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe" updateall --quiet
+          &"C:/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe" updateall --quiet --wait
 
       - name: VS Where
         run: |

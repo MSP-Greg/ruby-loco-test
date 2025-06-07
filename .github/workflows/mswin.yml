@@ -21,76 +21,12 @@ jobs:
           git config --system core.autocrlf false
           git config --system core.eol lf
 
-      - name: repo checkout
-        uses: actions/checkout@v4
-
-      - name: update VS Build Tools
+      - name: Update VS Build Tools
         run: |
           Invoke-WebRequest https://aka.ms/vs/17/release/vs_Enterprise.exe -OutFile C:/vs_Enterprise.exe
           C:/vs_Enterprise.exe updateall --quiet --includeOptional --wait --clean
-          &"C:/Program Files (x86)/Microsoft Visual Studio/Installer/setup.exe"
+          &"C:/Program Files (x86)/Microsoft Visual Studio/Installer/setup.exe" updateall --quiet
+
+      - name: VS Where
+        run: |
           &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-
-      - name: load ruby
-        timeout-minutes: 12
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: mswin
-
-      # cert file is created with RubyInstaller2
-      - name: Get Ruby and RubyInstaller2 repos
-        timeout-minutes: 5
-        run: |
-          $gh = 'https://github.com'
-          git clone -q --depth=1 --no-tags --branch=master  $gh/oneclick/rubyinstaller2.git ./rubyinstaller2
-          git clone -q --depth=1 --no-tags --branch=master  $gh/ruby/ruby.git               ./ruby
-          cd ruby
-          ruby ../git_log_utc.rb
-
-      - name: Install/Update Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable-x86_64-pc-windows-msvc
-          components: rustfmt
-
-      - name: Configure bindgen
-        run: |
-          echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
-          echo "BINDGEN_EXTRA_CLANG_ARGS=$((gcm clang).source -replace "bin\clang.exe","include")" >> $env:GITHUB_ENV
-          echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")"
-          echo "BINDGEN_EXTRA_CLANG_ARGS=$((gcm clang).source -replace "bin\clang.exe","include")"
-
-      - name: Cache - .downloaded-cache
-        uses: actions/cache@v4
-        with:
-          path: .downloaded-cache
-          key: dl-cache-win-mswin-${{ hashFiles('ruby/gems/bundled_gems') }}
-
-      - name: build & install
-        timeout-minutes: 30
-        run:  ./1_0_build_install_mswin.ps1
-
-      - name: test
-        timeout-minutes: 70
-        run:  ./2_0_test.ps1 mswin
-        env:
-          APPVEYOR: 'True'
-
-      - name: CLI Check Bash
-        shell: bash
-        run: ./cli_test_bash
-
-      - name: upload asset
-        timeout-minutes: 5
-        uses: ./.github/actions/upload-binary
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          ruby_path: ./${{ env.PRE }}
-
-      - name: save log artifact
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.TEST_LOGS }}
-          path: ./logs

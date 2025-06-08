@@ -27,10 +27,6 @@ jobs:
       - name: Update VS Build Tools
         run: ./UpdateVS.ps1 -RunAsAdmin
 
-      - name: Run vs_installer.exe
-        run: |
-          Start-Process -Wait -FilePath  "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "update --quiet --norestart --installpath ""C:\Program Files\Microsoft Visual Studio\2022\Enterprise"""
-
       - name: VS Where
         run: |
           &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"

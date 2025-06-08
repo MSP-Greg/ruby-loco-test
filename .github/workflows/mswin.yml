@@ -26,8 +26,10 @@ jobs:
 
       - name: VS prep
         run: |
+          Invoke-WebRequest https://catalog.s.download.windowsupdate.com/c/msdownload/update/software/updt/2025/06/visualstudioupdate-17.0.0to17.14.4-online_fd647d1ea50c860c88eaedbc446d8c92a6d173cf.exe  -OutFile C:/vs_17.14.4.exe
           Invoke-WebRequest https://aka.ms/vs/17/release/vs_Enterprise.exe -OutFile C:/vs_Enterprise.exe
           Get-ItemProperty -Path C:/vs_Enterprise.exe | Format-List
+          C:/vs_17.14.4.exe
 
       - name: Update VS Build Tools
         run: ./UpdateVS.ps1 -RunAsAdmin

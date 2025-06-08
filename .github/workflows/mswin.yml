@@ -24,6 +24,11 @@ jobs:
       - name: repo checkout
         uses: actions/checkout@v4
 
+      - name: VS prep
+        run: |
+          Invoke-WebRequest https://aka.ms/vs/17/release/vs_Enterprise.exe -OutFile C:/vs_Enterprise.exe
+          C:/vs_Enterprise.exe --update --quiet --wait
+
       - name: Update VS Build Tools
         run: ./UpdateVS.ps1 -RunAsAdmin
 

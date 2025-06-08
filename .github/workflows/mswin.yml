@@ -25,9 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Update VS Build Tools
-        run: |
-          Invoke-WebRequest https://aka.ms/vs/17/release/vs_Enterprise.exe -OutFile C:/vs_Enterprise.exe
-          C:/vs_Enterprise.exe updateall --quiet --includeOptional --wait --clean
+        run: ./UpdateVS.ps1 -RunAsAdmin
 
       - name: Run vs_installer.exe
         run: |

@@ -9,7 +9,7 @@ if (Test-Path -Path "$vsBase/Enterprise" -PathType Container ) {
 
 echo $vsType
 
-$argList = ('updateAll', '--quiet', '--norestart', '--nocache', '--wait',
+$argList = ('updateAll', '--passive', '--norestart', '--nocache', '--wait',
   '--installPath', """$vsBase/$vsType""")
 
 echo $argList

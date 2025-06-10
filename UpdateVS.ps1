@@ -9,15 +9,8 @@ if (Test-Path -Path "$vsBase/Enterprise" -PathType Container ) {
 
 echo $vsType
 
-#$argList = ('/c', "C:/vs_$VSType.exe", 'updateall', '--quiet', '--norestart', '--nocache',
-#  'channelUri', 'https://aka.ms/vs/17/release/channel', '--channelId', 'VisualStudio.17.release',
-#  '--installpath', "$vsBase/$vsType")
-
-# $process = Start-Process -FilePath cmd.exe  -ArgumentList $argList -Wait -NoNewWindow
-
-$argList = ('updateall', '--quiet', '--norestart', '--nocache', '--wait',
-  'channelUri', 'https://aka.ms/vs/17/release/channel', '--channelId', 'VisualStudio.17.release',
-  '--installpath', "$vsBase/$vsType")
+$argList = ('updateAll', '--quiet', '--norestart', '--nocache', '--wait',
+  '--installPath', ""$vsBase/$vsType"")
 
 echo $argList
 

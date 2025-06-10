@@ -1,4 +1,4 @@
-$vsBase = 'C:/Program Files/Microsoft Visual Studio/2022'
+$vsBase = 'C:\Program Files\Microsoft Visual Studio\2022'
 if (Test-Path -Path "$vsBase/Enterprise" -PathType Container ) {
   $vsType = 'Enterprise'
 } elseif (Test-Path -Path "$vsBase/Community" -PathType Container ) {
@@ -10,7 +10,7 @@ if (Test-Path -Path "$vsBase/Enterprise" -PathType Container ) {
 echo $vsType
 
 $argList = ('updateAll', '--passive', '--norestart', '--nocache', '--wait',
-  '--installPath', """$vsBase/$vsType""")
+  '--installPath', """$vsBase\$vsType""")
 
 echo $argList
 

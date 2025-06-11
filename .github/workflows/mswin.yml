@@ -30,7 +30,7 @@ jobs:
           Get-ItemProperty -Path C:/vs_Enterprise.exe | Format-List
 
       - name: Update VS Build Tools
-        run: ./UpdateVS.ps1 -RunAsAdmin
+        run: ./UpdateVS.ps1 -Verb RunAs
 
       - name: VS Where
         run: |

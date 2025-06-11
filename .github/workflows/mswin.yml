@@ -24,13 +24,8 @@ jobs:
       - name: repo checkout
         uses: actions/checkout@v4
 
-      - name: VS prep
-        run: |
-          Invoke-WebRequest https://aka.ms/vs/17/release/vs_Enterprise.exe -OutFile C:/vs_Enterprise.exe
-          Get-ItemProperty -Path C:/vs_Enterprise.exe | Format-List
-
       - name: Update VS Build Tools
-        run: ./UpdateVS.ps1 -Verb RunAs
+        run: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\VSInstaller.exe" update --quiet --wait'
 
       - name: VS Where
         run: |
